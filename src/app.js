@@ -1,11 +1,14 @@
-import express from  'express'
+import express from 'express'
+import allProductRouter from './modules/products/products.routes.js';
+import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
+import { errorMiddleware } from './middleware/errorMiddleware.js';
+import helmet from 'helmet';
+export const createApp = () => {
 
-export const createApp = ()=>{
-
- const app = express() ;
+    const app = express();
 
 
-   const allowedOrigins = [
+    const allowedOrigins = [
         "http://localhost:3000",
         // "https://www.wineandchampagnegifts.com/",
         // "https://wineandchampagnegifts.com/",
@@ -16,10 +19,27 @@ export const createApp = ()=>{
     ].filter(Boolean);
 
 
-    app.use('/health', (_req,res)=>{
-       res.json({sucess:true, message:"welcome to my websites....!"} )
+
+    app.use(express.json());
+     app.use(helmet());
+
+    //-------------- testing url ------------------//
+    app.use('/health', (_req, res) => {
+        res.json({ sucess: true, message: "welcome to my websites....!" })
     })
 
 
-    return app ;
+    //--------------- route api -------------------///
+
+    app.use('/api/v1/products', allProductRouter)
+
+
+
+
+
+
+    app.use(notFoundMiddleware);
+    app.use(errorMiddleware);
+
+    return app;
 }
