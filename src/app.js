@@ -3,6 +3,10 @@ import allProductRouter from './modules/products/products.routes.js';
 import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
 import helmet from 'helmet';
+import customerRouter from './modules/customer/customer.routes.js';
+import cookieParser from 'cookie-parser';
+import manufacturerRouter from './modules/manufacturer/manufacturer.routes.js';
+import header_category from './modules/category/header_category/header_category.routes.js';
 export const createApp = () => {
 
     const app = express();
@@ -19,7 +23,7 @@ export const createApp = () => {
     ].filter(Boolean);
 
 
-
+    app.use(cookieParser())
     app.use(express.json());
      app.use(helmet());
 
@@ -32,7 +36,10 @@ export const createApp = () => {
     //--------------- route api -------------------///
 
     app.use('/api/v1/products', allProductRouter)
-
+    app.use('/api/v1/customer', customerRouter)
+    app.use('/api/v1/manufacturer', manufacturerRouter)
+    app.use('/api/v1/header-category', header_category)
+    
 
 
 

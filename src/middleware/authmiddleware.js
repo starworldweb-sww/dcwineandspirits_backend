@@ -2,6 +2,7 @@ import { errorResponse } from '../utils/apiResponse.js';
 import { verifyToken } from '../utils/generateToken.js';
 
 export const authMiddleware = async (req, res, next) => {
+    
     try {
         const token = req.cookies?.token || req.headers?.authorization?.split(' ')[1];
         if (!token) {
