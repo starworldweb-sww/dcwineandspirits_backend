@@ -1,4 +1,5 @@
 import express from 'express'
+import cors from "cors";
 import allProductRouter from './modules/products/products.routes.js';
 import { notFoundMiddleware } from './middleware/notFoundMiddleware.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
