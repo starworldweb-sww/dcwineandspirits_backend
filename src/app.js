@@ -22,10 +22,15 @@ export const createApp = () => {
         process.env.FRONTEND_URL,
     ].filter(Boolean);
 
-
+    app.use(
+        cors({
+            origin: allowedOrigins,
+            credentials: true,
+        })
+    );
     app.use(cookieParser())
     app.use(express.json());
-     app.use(helmet());
+    app.use(helmet());
 
     //-------------- testing url ------------------//
     app.use('/health', (_req, res) => {
@@ -39,7 +44,7 @@ export const createApp = () => {
     app.use('/api/v1/customer', customerRouter)
     app.use('/api/v1/manufacturer', manufacturerRouter)
     app.use('/api/v1/header-category', header_category)
-    
+
 
 
 
