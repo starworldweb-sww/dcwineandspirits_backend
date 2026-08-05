@@ -71,7 +71,7 @@ const getModuleData = async (module_id, module_type) => {
 
     return { heading, items, general }
 }
-const getSeoUrl = async (type, id) => {
+ export const getSeoUrl = async (type, id) => {
     if (!id || !type) return null
 
     const queryKey = typeToQueryKey[type]

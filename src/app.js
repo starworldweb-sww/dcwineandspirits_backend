@@ -8,6 +8,14 @@ import customerRouter from './modules/customer/customer.routes.js';
 import cookieParser from 'cookie-parser';
 import manufacturerRouter from './modules/manufacturer/manufacturer.routes.js';
 import header_category from './modules/category/header_category/header_category.routes.js';
+import mobile_router from './modules/category/mobile_category/mobile_category.routes.js';
+import cartRouter from './modules/cart/cart.routes.js';
+import wishlistRouter from './modules/wishlish/wishlist.routes.js';
+import newsletterRoter from './modules/newsletter/newsletter.routes.js';
+import { getProductMeta } from './modules/meta/product_meta.controller.js';
+import { getCategoriMeta } from './modules/meta/category_meta.controller.js';
+import { getManufactureMeta } from './modules/meta/manufacture_meta.controller.js';
+import { getBlogMeta } from './modules/meta/blog_meta.controller.js';
 export const createApp = () => {
 
     const app = express();
@@ -35,19 +43,28 @@ export const createApp = () => {
 
     //-------------- testing url ------------------//
     app.use('/health', (_req, res) => {
-        res.json({ sucess: true, message: "welcome to my websites....!" })
+        res.json({ sucess: true, message: "welcome to my server....!" })
     })
 
 
-    //--------------- route api -------------------///
+    ///--------------- route api -------------------///
 
     app.use('/api/v1/products', allProductRouter)
     app.use('/api/v1/customer', customerRouter)
     app.use('/api/v1/manufacturer', manufacturerRouter)
     app.use('/api/v1/header-category', header_category)
+    app.use('/api/v1/mobile-category', mobile_router)
+    app.use('/api/v1/cart', cartRouter)
+    app.use('/api/v1/wishlist', wishlistRouter)
+    app.use('/api/v1/newsletter', newsletterRoter)
 
 
+    // ------------- meta api ----------------- //
 
+    app.get("/api/v1/meta/product/:identifier", getProductMeta)
+    app.get("/api/v1/meta/category/:identifier", getCategoriMeta)
+    app.get("/api/v1/meta/manufacturer/:identifier", getManufactureMeta)
+    app.get("/api/v1/meta/blog/:identifier", getBlogMeta)
 
 
 
