@@ -10,18 +10,18 @@ import { getNewsletterWelcomeTemplate } from '../../utils/getNewsletterWelcomeTe
 
 
 export const sha1 = (str) => {
-    return crypto.createHash('sha1').update(str).digest('hex');
+  return crypto.createHash('sha1').update(str).digest('hex');
 };
 
 export const hashPassword = (password, salt) => {
-    const step1 = sha1(password);
-    const step2 = sha1(salt + step1);
-    const step3 = sha1(salt + step2);
-    return step3;
+  const step1 = sha1(password);
+  const step2 = sha1(salt + step1);
+  const step3 = sha1(salt + step2);
+  return step3;
 }
 
 export const generateSalt = (length = 9) => {
-    return crypto.randomBytes(16).toString('hex').substring(0, length);
+  return crypto.randomBytes(16).toString('hex').substring(0, length);
 }
 
 
@@ -123,185 +123,181 @@ export const generateSalt = (length = 9) => {
 // }
 
 export const loginCustomer = async (data, ip, cookies = {}) => {
-    const { email, password } = data;
-   
-    // const newYorkTime = DateTime.now().setZone("America/New_York").toJSDate();
-    const newYorkTime = DateTime.now()
-        .setZone("America/New_York")
-        .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    const customer = await prisma.oc_customer.findFirst({
-        where: { email: email.toLowerCase().trim() },
-        select: {
-            customer_id: true,
-            firstname: true,
-            lastname: true,
-            email: true,
-            telephone: true,
-            password: true,
-            salt: true,
-            status: true,
-            customer_group_id: true,
-        },
-    });
+  const { email, password } = data;
+
+  // const newYorkTime = DateTime.now().setZone("America/New_York").toJSDate();
+  const newYorkTime = DateTime.now()
+    .setZone("America/New_York")
+    .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+  const customer = await prisma.oc_customer.findFirst({
+    where: { email: email.toLowerCase().trim() },
+    select: {
+      customer_id: true,
+      firstname: true,
+      lastname: true,
+      email: true,
+      telephone: true,
+      password: true,
+      salt: true,
+      status: true,
+      customer_group_id: true,
+    },
+  });
 
 
 
-    if (!customer) throw new Error('Invalid email or password');
-    if (!customer.status) throw new Error('Your account is disabled. Contact support.');
+  if (!customer) throw new Error('Invalid email or password');
+  if (!customer.status) throw new Error('Your account is disabled. Contact support.');
 
-    const hashedInput = hashPassword(password, customer.salt);
-    if (hashedInput !== customer.password) throw new Error('Invalid email or password');
+  const hashedInput = hashPassword(password, customer.salt);
+  if (hashedInput !== customer.password) throw new Error('Invalid email or password');
 
-    await prisma.oc_customer_ip.create({
-        data: { customer_id: customer.customer_id, ip: ip || '0.0.0.0', date_added: new Date() },
-    });
+  await prisma.oc_customer_ip.create({
+    data: { customer_id: customer.customer_id, ip: ip || '0.0.0.0', date_added: new Date() },
+  });
 
-    await prisma.oc_customer_activity.create({
-        data: {
-            customer_id: customer.customer_id || 0,
-            key: "login",
-            data: JSON.stringify({
-                "customer_id": customer?.customer_id,
-                "name": `${customer?.firstname} ${customer?.lastname}`,
-            }),
-            ip: ip,
-            date_added: newYorkTime
-        }
-    })
+  await prisma.oc_customer_activity.create({
+    data: {
+      customer_id: customer.customer_id || 0,
+      key: "login",
+      data: JSON.stringify({
+        "customer_id": customer?.customer_id,
+        "name": `${customer?.firstname} ${customer?.lastname}`,
+      }),
+      ip: ip,
+      date_added: newYorkTime
+    }
+  })
 
-    //   const guestSessionId = cookies?.guest_session || '';
-    //   if (guestSessionId) {
-    //     await mergeGuestCartService({
-    //       sessionId: guestSessionId,
-    //       customerId: customer.customer_id,
-    //     });
-    //   }
+  //   const guestSessionId = cookies?.guest_session || '';
+  //   if (guestSessionId) {
+  //     await mergeGuestCartService({
+  //       sessionId: guestSessionId,
+  //       customerId: customer.customer_id,
+  //     });
+  //   }
 
 
-    const guestWishlistCookie = cookies?.guest_wishlist || '';
-    const guestProductIds = guestWishlistCookie
-        ? guestWishlistCookie.split(',').map(Number).filter(Boolean)
-        : [];
+  const guestWishlistCookie = cookies?.guest_wishlist || '';
+  const guestProductIds = guestWishlistCookie
+    ? guestWishlistCookie.split(',').map(Number).filter(Boolean)
+    : [];
 
-    //   if (guestProductIds.length > 0) {
-    //     await mergeGuestWishlistService({
-    //       customerId: customer.customer_id,
-    //       guestProductIds,
-    //     });
-    //   }
+  //   if (guestProductIds.length > 0) {
+  //     await mergeGuestWishlistService({
+  //       customerId: customer.customer_id,
+  //       guestProductIds,
+  //     });
+  //   }
 
-    const token = generateToken({
-        customer_id: customer.customer_id,
-        email: customer.email,
-        customer_group_id: customer.customer_group_id,
-    });
+  const token = generateToken({
+    customer_id: customer.customer_id,
+    email: customer.email,
+    customer_group_id: customer.customer_group_id,
+  });
 
-    return {
-        token,
-        customer: {
-            customer_id: customer.customer_id,
-            firstname: customer.firstname,
-            lastname: customer.lastname,
-            email: customer.email,
-            telephone: customer.telephone,
-        },
-    };
+  return {
+    token,
+    customer: {
+      customer_id: customer.customer_id,
+      firstname: customer.firstname,
+      lastname: customer.lastname,
+      email: customer.email,
+      telephone: customer.telephone,
+    },
+  };
 };
 
 
 export const registerCustomer = async (data, ip) => {
-    const { firstname, lastname, email, telephone, password, newsletter } = data;
-    const newYorkTime = DateTime.now()
-        .setZone("America/New_York")
-        .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+  const { firstname, lastname, email, telephone, password, newsletter } = data;
+  const newYorkTime = DateTime.now()
+    .setZone("America/New_York")
+    .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
-    const existing = await prisma.oc_customer.findFirst({
-        where: { email: email.toLowerCase().trim() }
+  const existing = await prisma.oc_customer.findFirst({
+    where: { email: email.toLowerCase().trim() }
+  });
+
+  if (existing) {
+    throw new Error('Email already registered');
+  }
+
+
+  const salt = generateSalt();
+  const hashedPassword = hashPassword(password, salt);
+
+  if (newsletter) {
+    const existingEmail = await prisma.oc_journal3_newsletter.findFirst({
+      where: {
+        email: email
+      }
     });
 
-    if (existing) {
-        throw new Error('Email already registered');
+    if (existingEmail) {
+      throw new Error("You have already subscribed to our newsletter.");
     }
-
-
-    const salt = generateSalt();
-    const hashedPassword = hashPassword(password, salt);
-
-    if (newsletter) {
-        const existingEmail = await prisma.oc_journal3_newsletter.findFirst({
-            where: {
-                email: email
-            }
-        });
-
-        if (existingEmail) {
-            return {
-                success: false,
-                message: "You have already subscribed to our newsletter."
-            };
-        }
-
-        const data = await prisma.oc_journal3_newsletter.create({
-            data: {
-                name: "",
-                email: email,
-                ip: ip,
-                store_id: 0
-            }
-        });
-
-        await transporter.sendMail({
-            from: `"Dc Wine & Spirits"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-            to: email,
-            subject: "Welcome! Here's your $10 coupon 🎁",
-            html: getNewsletterWelcomeTemplate(email)
-        });
-
-    }
-
-
-    const newCustomer = await prisma.oc_customer.create({
-        data: {
-            customer_group_id: 1,
-            store_id: 0,
-            language_id: 1,
-            firstname: firstname.trim(),
-            lastname: lastname.trim(),
-            email: email.toLowerCase().trim(),
-            telephone: telephone || '',
-            fax: '',
-            password: hashedPassword,
-            salt,
-            custom_field: '',
-            ip: ip || '0.0.0.0',
-            newsletter: Boolean(newsletter),
-            status: true,
-            safe: false,
-            token: '',
-            code: '',
-            date_added: new Date(),
-            image: ""
-        }
+    const data = await prisma.oc_journal3_newsletter.create({
+      data: {
+        name: "",
+        email: email,
+        ip: ip,
+        store_id: 0
+      }
     });
-
-    //   await prisma.oc_customer_activity.create({
-    //     data: {
-    //       customer_id: newCustomer.customer_id || 0,
-    //       key: "register new customer",
-    //       data: JSON.stringify({
-    //         "customer_id": newCustomer?.customer_id,
-    //         "name": `${newCustomer?.firstname} ${newCustomer?.lastname}`,
-    //       }),
-    //       ip: ip,
-    //       date_added: newYorkTime
-    //     }
-    //   })
 
     await transporter.sendMail({
-        from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-        to: email,
-        subject: 'Welcome to Wine & Champagne Gifts 🍾',
-        html: `
+      from: `"Dc Wine & Spirits"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+      to: email,
+      subject: "Welcome! Here's your $10 coupon 🎁",
+      html: getNewsletterWelcomeTemplate(email)
+    });
+
+  }
+
+
+  const newCustomer = await prisma.oc_customer.create({
+    data: {
+      customer_group_id: 1,
+      store_id: 0,
+      language_id: 1,
+      firstname: firstname.trim(),
+      lastname: lastname.trim(),
+      email: email.toLowerCase().trim(),
+      telephone: telephone || '',
+      fax: '',
+      password: hashedPassword,
+      salt,
+      custom_field: '',
+      ip: ip || '0.0.0.0',
+      newsletter: Boolean(newsletter),
+      status: true,
+      safe: false,
+      token: '',
+      code: '',
+      date_added: new Date(),
+      image: ""
+    }
+  });
+
+  //   await prisma.oc_customer_activity.create({
+  //     data: {
+  //       customer_id: newCustomer.customer_id || 0,
+  //       key: "register new customer",
+  //       data: JSON.stringify({
+  //         "customer_id": newCustomer?.customer_id,
+  //         "name": `${newCustomer?.firstname} ${newCustomer?.lastname}`,
+  //       }),
+  //       ip: ip,
+  //       date_added: newYorkTime
+  //     }
+  //   })
+
+  await transporter.sendMail({
+    from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+    to: email,
+    subject: 'Welcome to Wine & Champagne Gifts 🍾',
+    html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -470,98 +466,98 @@ export const registerCustomer = async (data, ip) => {
 </body>
 </html>
   `,
-    });
+  });
 
-    const token = generateToken({
-        customer_id: newCustomer.customer_id,
-        email: newCustomer.email,
-        customer_group_id: newCustomer.customer_group_id
-    });
+  const token = generateToken({
+    customer_id: newCustomer.customer_id,
+    email: newCustomer.email,
+    customer_group_id: newCustomer.customer_group_id
+  });
 
 
 
-    return {
-        token,
-        customer: {
-            customer_id: newCustomer.customer_id,
-            firstname: newCustomer.firstname,
-            lastname: newCustomer.lastname,
-            email: newCustomer.email
-        }
-    };
+  return {
+    token,
+    customer: {
+      customer_id: newCustomer.customer_id,
+      firstname: newCustomer.firstname,
+      lastname: newCustomer.lastname,
+      email: newCustomer.email
+    }
+  };
 }
 
 
 export const getProfile = async (customer_id) => {
-    const customer = await prisma.oc_customer.findUnique({
-        where: { customer_id: Number(customer_id) },
-        select: {
-            customer_id: true,
-            firstname: true,
-            lastname: true,
-            email: true,
-            telephone: true,
-            date_added: true,
-            status: true
-        }
-    });
+  const customer = await prisma.oc_customer.findUnique({
+    where: { customer_id: Number(customer_id) },
+    select: {
+      customer_id: true,
+      firstname: true,
+      lastname: true,
+      email: true,
+      telephone: true,
+      date_added: true,
+      status: true
+    }
+  });
 
-    if (!customer) throw new Error('Customer not found');
-    return customer;
+  if (!customer) throw new Error('Customer not found');
+  return customer;
 }
 
 export const changePasswordService = async (customer_id, { new_password }) => {
-    const customer = await prisma.oc_customer.findUnique({
-        where: { customer_id: Number(customer_id) },
-        select: { password: true, salt: true }
-    });
-     
-    
-    if (!customer) {
-        throw new Error('Customer not found');
-    }
+  const customer = await prisma.oc_customer.findUnique({
+    where: { customer_id: Number(customer_id) },
+    select: { password: true, salt: true }
+  });
 
-    const salt = generateSalt();
-    const hashedNewPassword = hashPassword(new_password, salt);
 
-    await prisma.oc_customer.update({
-        where: { customer_id: Number(customer_id) },
-        data: { password: hashedNewPassword, salt }
-    });
+  if (!customer) {
+    throw new Error('Customer not found');
+  }
 
-    return { message: 'Password changed successfully' };
+  const salt = generateSalt();
+  const hashedNewPassword = hashPassword(new_password, salt);
+
+  await prisma.oc_customer.update({
+    where: { customer_id: Number(customer_id) },
+    data: { password: hashedNewPassword, salt }
+  });
+
+  return { message: 'Password changed successfully' };
 }
 
 
 
 export const forgotPasswordRequestService = async (email) => {
-    const customer = await prisma.oc_customer.findFirst({
-        where: { email: email.toLowerCase().trim() },
-        select: {
-            customer_id: true,
-            firstname: true,
-            email: true,
-            status: true
-        }
-    });
+  const customer = await prisma.oc_customer.findFirst({
+    where: { email: email.toLowerCase().trim() },
+    select: {
+      customer_id: true,
+      firstname: true,
+      email: true,
+      status: true
+    }
+  });
 
-    if (!customer) throw new Error('No account found with this email');
-    if (!customer.status) throw new Error('Your account is disabled. Contact support.');
+  if (!customer) throw new Error('No account found with this email');
+  if (!customer.status) throw new Error('Your account is disabled. Contact support.');
 
-    const resetCode = crypto.randomBytes(16).toString('hex');
+  const resetCode = crypto.randomBytes(16).toString('hex');
 
-    await prisma.oc_customer.update({
-        where: { customer_id: customer.customer_id },
-        data: { code: resetCode }
-    });
+  await prisma.oc_customer.update({
+    where: { customer_id: customer.customer_id },
+    data: { code: resetCode }
+  });
 
-    const resetLink = `${process.env.FRONTEND_URL}/account/reset?code=${resetCode}`;
+  const resetLink = `${process.env.FRONTEND_URL}/account/reset?code=${resetCode}`;
 
-    await transporter.sendMail({
-        from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-        to: customer.email,
-        subject: 'Reset Your Password - Wine & champagne gifts',
-        html: `<!DOCTYPE html>
+  await transporter.sendMail({
+    from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+    to: customer.email,
+    subject: 'Reset Your Password - Wine & champagne gifts',
+    html: `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -742,104 +738,104 @@ export const forgotPasswordRequestService = async (email) => {
 
 </body>
 </html> `
-    });
+  });
 
-    return { message: 'Password reset link sent to your email' };
+  return { message: 'Password reset link sent to your email' };
 };
 
 export const resetPasswordService = async (code, new_password, ip) => {
-    const newYorkTime = DateTime.now()
-        .setZone("America/New_York")
-        .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    const customer = await prisma.oc_customer.findFirst({
-        where: { code: code },
-        select: {
-            customer_id: true,
-            code: true,
-            firstname: true,
-            lastname: true
-        }
-    });
-
-    if (!customer || !customer.code) {
-        throw new Error('Invalid or expired reset link');
+  const newYorkTime = DateTime.now()
+    .setZone("America/New_York")
+    .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+  const customer = await prisma.oc_customer.findFirst({
+    where: { code: code },
+    select: {
+      customer_id: true,
+      code: true,
+      firstname: true,
+      lastname: true
     }
-    const newSalt = generateSalt();
-    const newHashedPassword = hashPassword(new_password, newSalt);
+  });
 
-    await prisma.oc_customer_activity.create({
-        data: {
-            customer_id: customer.customer_id || 0,
-            key: "forgotten",
-            data: JSON.stringify({
-                "customer_id": customer?.customer_id,
-                "name": `${customer?.firstname} ${customer?.lastname}`,
-            }),
-            ip: ip,
-            date_added: newYorkTime
-        }
-    })
+  if (!customer || !customer.code) {
+    throw new Error('Invalid or expired reset link');
+  }
+  const newSalt = generateSalt();
+  const newHashedPassword = hashPassword(new_password, newSalt);
 
-    await prisma.oc_customer.update({
-        where: { customer_id: customer.customer_id },
-        data: {
-            password: newHashedPassword,
-            salt: newSalt,
-            code: ''
-        }
-    });
+  await prisma.oc_customer_activity.create({
+    data: {
+      customer_id: customer.customer_id || 0,
+      key: "forgotten",
+      data: JSON.stringify({
+        "customer_id": customer?.customer_id,
+        "name": `${customer?.firstname} ${customer?.lastname}`,
+      }),
+      ip: ip,
+      date_added: newYorkTime
+    }
+  })
 
-    return { message: 'Password reset successfully. Please login.' };
+  await prisma.oc_customer.update({
+    where: { customer_id: customer.customer_id },
+    data: {
+      password: newHashedPassword,
+      salt: newSalt,
+      code: ''
+    }
+  });
+
+  return { message: 'Password reset successfully. Please login.' };
 };
 
 export const accountInformationService = async (customer_id, data, ip) => {
-    const { ...fields } = data;
-    const newYorkTime = DateTime.now()
-        .setZone("America/New_York")
-        .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    if (!customer_id) throw new Error("customer_id is required");
+  const { ...fields } = data;
+  const newYorkTime = DateTime.now()
+    .setZone("America/New_York")
+    .toFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+  if (!customer_id) throw new Error("customer_id is required");
 
-    const customer = await prisma.oc_customer.findUnique({
-        where: { customer_id: customer_id }
-    })
-    const [existing, emailExist] = await Promise.all([
-        prisma.oc_customer.findFirst({ where: { customer_id: Number(customer_id) } }),
-        fields.email
-            ? prisma.oc_customer.findFirst({
-                where: { email: fields.email.toLowerCase().trim(), NOT: { customer_id } }
-            })
-            : null
-    ]);
+  const customer = await prisma.oc_customer.findUnique({
+    where: { customer_id: customer_id }
+  })
+  const [existing, emailExist] = await Promise.all([
+    prisma.oc_customer.findFirst({ where: { customer_id: Number(customer_id) } }),
+    fields.email
+      ? prisma.oc_customer.findFirst({
+        where: { email: fields.email.toLowerCase().trim(), NOT: { customer_id } }
+      })
+      : null
+  ]);
 
-    if (!existing) throw new Error("Customer not found");
-    if (emailExist) throw new Error("Email already exists in another account");
-
-
-    const updateData = Object.fromEntries(
-        Object.entries(fields)
-            .filter(([key, val]) => String(val).trim() !== String(existing[key]).trim())
-            .map(([key, val]) => [key, String(val).trim()])
-    );
-
-    if (!Object.keys(updateData).length) return { message: "No changes detected" };
+  if (!existing) throw new Error("Customer not found");
+  if (emailExist) throw new Error("Email already exists in another account");
 
 
+  const updateData = Object.fromEntries(
+    Object.entries(fields)
+      .filter(([key, val]) => String(val).trim() !== String(existing[key]).trim())
+      .map(([key, val]) => [key, String(val).trim()])
+  );
 
-    await prisma.oc_customer_activity.create({
-        data: {
-            customer_id: customer.customer_id || 0,
-            key: "account_edit",
-            data: JSON.stringify({
-                "customer_id": customer?.customer_id,
-                "name": `${customer?.firstname} ${customer?.lastname}`,
-            }),
-            ip: ip,
-            date_added: newYorkTime
-        }
-    })
+  if (!Object.keys(updateData).length) return { message: "No changes detected" };
 
-    return await prisma.oc_customer.update({
-        where: { customer_id: Number(customer_id) },
-        data: updateData,
-    });
+
+
+  await prisma.oc_customer_activity.create({
+    data: {
+      customer_id: customer.customer_id || 0,
+      key: "account_edit",
+      data: JSON.stringify({
+        "customer_id": customer?.customer_id,
+        "name": `${customer?.firstname} ${customer?.lastname}`,
+      }),
+      ip: ip,
+      date_added: newYorkTime
+    }
+  })
+
+  return await prisma.oc_customer.update({
+    where: { customer_id: Number(customer_id) },
+    data: updateData,
+  });
 };

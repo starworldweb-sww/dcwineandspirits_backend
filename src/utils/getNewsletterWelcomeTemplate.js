@@ -44,7 +44,7 @@
                                                     Your Coupon Code
                                                 </p>
                                                 <p style="margin:6px 0 0; font-size:28px; font-weight:bold; color:#ff6b35; letter-spacing:2px;">
-                                                    WCG10
+                                                    WELCOME10
                                                 </p>
                                             </div>
                                         </td>
