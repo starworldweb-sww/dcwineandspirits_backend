@@ -16,6 +16,10 @@ import { getProductMeta } from './modules/meta/product_meta.controller.js';
 import { getCategoriMeta } from './modules/meta/category_meta.controller.js';
 import { getManufactureMeta } from './modules/meta/manufacture_meta.controller.js';
 import { getBlogMeta } from './modules/meta/blog_meta.controller.js';
+import customerAddressRoutes from './modules/customer Address/customerAddress.routes.js';
+import checkoutRouter, { webhookRouter } from './modules/checkout/checkout.routes.js';
+import shippingRouter from './modules/shipping rate/shipping_rates.routes.js';
+import coupon_router from './modules/coupon/coupon.routes.js';
 export const createApp = () => {
 
     const app = express();
@@ -38,6 +42,7 @@ export const createApp = () => {
         })
     );
     app.use(cookieParser())
+    app.use('/stripe', webhookRouter)
     app.use(express.json());
     app.use(helmet());
 
@@ -57,6 +62,10 @@ export const createApp = () => {
     app.use('/api/v1/cart', cartRouter)
     app.use('/api/v1/wishlist', wishlistRouter)
     app.use('/api/v1/newsletter', newsletterRoter)
+    app.use('/api/v1/customer-address', customerAddressRoutes)
+    app.use('/api/v1/checkout', checkoutRouter)
+    app.use('/api/v1/shipping-rate',shippingRouter)
+    app.use('/api/v1/coupon',coupon_router)
 
 
     // ------------- meta api ----------------- //

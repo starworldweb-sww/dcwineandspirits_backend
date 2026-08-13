@@ -1,18 +1,18 @@
 
 import { DateTime } from "luxon";
 import { prisma } from "../../../lib/prisma.js";
-import { transporter } from "../../config/nodmiller.js";
-import { generateOrderConfirmationEmail } from "../../utils/OrderConfirmationemail.js";
 import { ORDER_STATUS } from "../../utils/orderStatus.js";
 import { registerCustomer } from "../customer/customer.service.js";
 import { createAddressServices } from "../customer Address/customerAddress.service.js";
 import Stripe from 'stripe';
+import { transporter } from "../../config/nodemiller.js";
+import { generateOrderConfirmationEmail } from "../../utils/orderConfrmationemail.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // ─── Constants ────────────────────────────────────────────────
 const MAX_META_VALUE_LEN = 500;
-const STORE_NAME = process.env.STORE_NAME ?? "Wine & Champagne Gifts";
+const STORE_NAME = process.env.STORE_NAME ?? "";
 const STORE_URL = process.env.STORE_URL ?? "";
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -306,7 +306,7 @@ const insertOrderProducts = async (tx, order_id, products) => {
 // ─── Main placeOrderService ────────────────────────────────────
 export const placeOrderService = async (orderData) => {
   const {
-    invoice_prefix = "INV-WCG-00", store_id = 0, store_name = "", store_url = "",
+    invoice_prefix = "INV-2022-00", store_id = 0, store_name = "", store_url = "",
     customer_id = 0, customer_group_id = 1,
     firstname, lastname, email, telephone, custom_field = {},
     payment_firstname, payment_lastname, payment_company = "",
@@ -315,7 +315,7 @@ export const placeOrderService = async (orderData) => {
     payment_country, payment_country_id,
     payment_address_format = "", payment_custom_field = {},
     payment_method, payment_code,
-    shipping_firstname = "", shipping_lastname = "", shipping_telephone, shipping_company = "",
+    shipping_firstname = "", shipping_lastname = "", shipping_company = "",
     shipping_address_1 = "", shipping_address_2 = "", shipping_city = "",
     shipping_postcode = "", shipping_zone = "", shipping_zone_id = 0,
     shipping_country = "", shipping_country_id = 0,
@@ -330,7 +330,8 @@ export const placeOrderService = async (orderData) => {
     checkoutType = null, registerData = null, addressData = null,
     stripe_payment_intent_id = null, stripe_client_secret = null,
     coupon_id = "",
-    discountAmount = 0
+    discountAmount = 0,
+    
   } = orderData;
 
 
@@ -362,7 +363,7 @@ export const placeOrderService = async (orderData) => {
     payment_address_format,
     payment_custom_field: JSON.stringify(payment_custom_field),
     payment_method, payment_code,
-    shipping_firstname, shipping_lastname, shipping_telephone, shipping_company,
+    shipping_firstname, shipping_lastname, shipping_company,
     shipping_address_1, shipping_address_2, shipping_city, shipping_postcode,
     shipping_zone, shipping_zone_id, shipping_country, shipping_country_id,
     shipping_address_format,
@@ -558,6 +559,7 @@ export const placeOrderService = async (orderData) => {
     const order = await tx.oc_order.create({
       data: {
         invoice_no: 0, invoice_prefix, store_id, fax: "",
+        hprmp_repetition:0,hprmp_active:false,hprmp_last_send:null,
         affiliate_id, commission, marketing_id, tracking,
         forwarded_ip, user_agent, accept_language,
         date_added: newYorkTime,
@@ -649,7 +651,6 @@ const buildEmailArgs = (orderData, products, builtTotals, newYorkTime) => ({
   builtTotals,
   shipping_firstname: orderData.shipping_firstname,
   shipping_lastname: orderData.shipping_lastname,
-  shipping_telephone: orderData.shipping_telephone,
   shipping_address_1: orderData.shipping_address_1,
   shipping_address_2: orderData.shipping_address_2,
   shipping_city: orderData.shipping_city,
@@ -671,7 +672,7 @@ const buildEmailArgs = (orderData, products, builtTotals, newYorkTime) => ({
 export const _sendConfirmationEmails = async ({
   result, firstname, lastname, email, newYorkTime, telephone,
   products, builtTotals,
-  shipping_firstname, shipping_lastname, shipping_telephone,
+  shipping_firstname, shipping_lastname,
   shipping_address_1, shipping_address_2,
   shipping_city, shipping_zone, shipping_postcode, shipping_country, shipping_method,
   payment_method, payment_firstname, payment_lastname,
@@ -685,7 +686,7 @@ export const _sendConfirmationEmails = async ({
     date_added: newYorkTime,
     products, totals: builtTotals,
     telephone,
-    shipping_firstname, shipping_lastname, shipping_telephone,
+    shipping_firstname, shipping_lastname,
     shipping_address_1, shipping_address_2,
     shipping_city, shipping_zone, shipping_postcode, shipping_country, shipping_method,
     payment_method, payment_firstname, payment_lastname,

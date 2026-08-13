@@ -2,6 +2,7 @@ import { prisma } from "../../../lib/prisma.js";
 import { successResponse } from "../../utils/apiResponse.js";
 import { createAddressServices } from "../customer Address/customerAddress.service.js";
 import { registerCustomer } from "../customer/customer.service.js";
+import { clearCartService } from "../cart/cart.service.js";
 import { placeOrderService, _sendConfirmationEmails, } from "./checkout.service.js";
 import Stripe from 'stripe';
 import { DateTime } from "luxon";
@@ -12,7 +13,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const placeOrder = async (req, res) => {
     const body = req.body;
     const { customer, billing, shipping, payment, shippingMethod, checkoutType, payment_method } = body;
-    
+
     if (!body.products || !Array.isArray(body.products) || body.products.length === 0) {
         return res.status(400).json({ success: false, message: "Products Not Found !" });
     }
@@ -20,7 +21,7 @@ export const placeOrder = async (req, res) => {
     const ip =
         req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
         req.socket?.remoteAddress || "";
-
+    const userAgent = req.headers["user-agent"] || "";
     let customerDetails = null;
 
 
@@ -84,7 +85,6 @@ export const placeOrder = async (req, res) => {
 
         shipping_firstname: shipping?.firstname ?? body.shipping_firstname ?? "",
         shipping_lastname: shipping?.lastname ?? body.shipping_lastname ?? "",
-        shipping_telephone: shipping?.telephone ?? body.shipping_telephone ?? "",
         shipping_company: shipping?.company ?? body.shipping_company ?? "",
         shipping_address_1: shipping?.address_1 ?? body.shipping_address_1 ?? "",
         shipping_address_2: shipping?.address_2 ?? body.shipping_address_2 ?? "",
@@ -126,9 +126,24 @@ export const placeOrder = async (req, res) => {
             zone_id: parseInt(body.payment_zone_id) || 0,
             custom_field: body.payment_custom_field || "",
         },
-        coupon_id:body?.coupon_id,
-        discountAmount:body?.discountAmount
+        coupon_id: body?.coupon_id,
+        discountAmount: body?.discountAmount,
+        user_agent:userAgent
     });
+
+    const shouldClearCart =
+        body.payment_code === 'cod' ||
+        !!body.stripe_payment_intent_id;
+
+    if (shouldClearCart) {
+        try {
+            const clearCustomerId = customerDetails?.customer_id ?? customer?.id ?? body.customer_id ?? req.customer?.customer_id ?? 0;
+            const clearSessionId = req.cookies?.guest_session || '';
+            await clearCartService({ sessionId: clearSessionId, customerId: clearCustomerId });
+        } catch (clearErr) {
+            console.error("Failed to clear cart after order:", clearErr.message);
+        }
+    }
 
     return res.status(201).json({
         success: true,
@@ -192,7 +207,7 @@ export const createPaymentIntent = async (req, res) => {
 };
 
 export const handleWebhook = async (req, res) => {
-    
+
     const sig = req.headers['stripe-signature'];
     let event;
 
@@ -315,6 +330,14 @@ export const handleWebhook = async (req, res) => {
                         payment_country: order.payment_country,
                         comment: order.comment
                     });
+
+                    if (order.customer_id > 0) {
+                        try {
+                            await clearCartService({ sessionId: '', customerId: order.customer_id });
+                        } catch (clearErr) {
+                            console.error("Failed to clear cart in webhook:", clearErr.message);
+                        }
+                    }
                 } catch (err) {
                     console.error("Error processing payment_intent.succeeded webhook:", err);
                 }

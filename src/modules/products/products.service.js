@@ -8,6 +8,35 @@ const STORE_ID = 0;
 const CUSTOMER_GROUP_ID = 1;
 
 
+const buildBreadcrumbs = async (categoryId) => {
+    const pathRows = await prisma.oc_category_path.findMany({
+        where: { category_id: categoryId },
+        orderBy: { level: "asc" },
+        select: { path_id: true, level: true },
+    });
+
+    if (!pathRows.length) return [];
+
+    const pathIds = pathRows.map((r) => r.path_id);
+    const [descriptions, seoMap] = await Promise.all([
+        prisma.oc_category_description.findMany({
+            where: { category_id: { in: pathIds }, language_id: LANGUAGE_ID },
+            select: { category_id: true, name: true },
+        }),
+        fetchSeoMap(pathIds.map((id) => `category_id=${id}`)),
+    ]);
+
+    return pathRows.map((row) => {
+        const desc = descriptions.find((d) => d.category_id === row.path_id);
+        return {
+            category_id: row.path_id,
+            name: desc?.name ?? null,
+            slug: seoMap.get(`category_id=${row.path_id}`) ?? null,
+            level: row.level,
+        };
+    });
+};
+
 const parseIdList = (value) => {
     if (value == null || value === "") return [];
 
@@ -21,13 +50,11 @@ const parseIdList = (value) => {
         ),
     ];
 };
-
 const parseOptionalNumber = (value) => {
     if (value == null || value === "") return null;
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
 };
-
 const parseCategoryFilters = (query) => {
     const manufacturerIds = parseIdList(
         query.fm ?? query.manufacturer_id ?? query.brand ?? query.manufacturers
@@ -64,7 +91,6 @@ const parseCategoryFilters = (query) => {
             inStock != null,
     };
 };
-
 const parsePositiveInt = (value, fallback) => {
     const n = parseInt(value, 10);
     return Number.isInteger(n) && n > 0 ? n : fallback;
@@ -572,7 +598,7 @@ export const getAllProductsServices = async (page = 1, limit = 24) => {
 };
 
 const isDateActive = (start, end, now) => {
-    
+
     const startYear = start ? start.getFullYear() : null;
     const endYear = end ? end.getFullYear() : null;
     const startOk = !start || Number.isNaN(startYear) || startYear <= 1970 || start <= now;
@@ -696,7 +722,7 @@ const getProductsSummary = async (productIds) => {
 };
 
 const getCategoryData = async (categoryId) => {
-    const [category, categoryDesc, subCategories, productLinks] = await Promise.all([
+    const [category, categoryDesc, subCategories, productLinks, breadcrumbs] = await Promise.all([
         prisma.oc_category.findUnique({ where: { category_id: categoryId } }),
         prisma.oc_category_description.findFirst({
             where: { category_id: categoryId, language_id: LANGUAGE_ID },
@@ -710,6 +736,7 @@ const getCategoryData = async (categoryId) => {
             where: { category_id: categoryId },
             select: { product_id: true },
         }),
+        buildBreadcrumbs(categoryId),
     ]);
 
     // subcategory names fetch karo
@@ -760,6 +787,7 @@ const getCategoryData = async (categoryId) => {
         brands: [...brandMap.values()],
         priceRange,
         products,
+        breadcrumbs
     };
 };
 
@@ -798,7 +826,7 @@ const getManufacturerData = async (manufacturerId) => {
 
 export const getProductBySlugOrIdService = async (slugOrId) => {
     const resolved = await resolveSlugOrId(slugOrId);
-    
+
     if (!resolved) {
         return { type: "not_found" };
     }
@@ -820,7 +848,7 @@ export const getProductBySlugOrIdService = async (slugOrId) => {
 
 const getRelatedProductsSummary = async (productIds) => {
     if (!productIds.length) return [];
-   
+
 
     const now = new Date();
 
@@ -876,7 +904,7 @@ const getFullProductData = async (productId) => {
     const now = new Date();
 
     const product = await prisma.oc_product.findUnique({ where: { product_id: productId } });
-    
+
     if (!product) return null;
 
     const [
@@ -938,7 +966,7 @@ const getFullProductData = async (productId) => {
     ]);
 
     // ---- Active special price nikalo ----
-   
+
     const activeSpecial = specials
         .filter((s) => isDateActive(s?.date_start, s?.date_end, now))
         .sort((a, b) => a.priority - b.priority)[0];
@@ -961,7 +989,7 @@ const getFullProductData = async (productId) => {
     ]);
 
     const optionDescMap = new Map(optionDescs.map((d) => [d.option_id, d.name]));
-  
+
     // option_value_id -> name ke liye oc_option_value_description chahiye
     const allOptionValueIds = optionValues.map((v) => v.option_value_id);
     const optionValueDescs = allOptionValueIds.length
@@ -1010,7 +1038,7 @@ const getFullProductData = async (productId) => {
         text: a.text,
     }));
 
-    
+
     const relatedIds = relatedRows.map((r) => r.related_id);
 
     const relatedProducts = await getRelatedProductsSummary(relatedIds);
@@ -1030,11 +1058,10 @@ const getFullProductData = async (productId) => {
         : [];
 
 
-    const manufacturer_seo =  await prisma.oc_seo_url.findFirst({
-            where: { query: `manufacturer_id=${manufacturer?.manufacturer_id}`, store_id: STORE_ID, language_id: LANGUAGE_ID },
-            select: { keyword: true },
-        })
-  console.log("manufacturer_seo",manufacturer_seo)
+    const manufacturer_seo = await prisma.oc_seo_url.findFirst({
+        where: { query: `manufacturer_id=${manufacturer?.manufacturer_id}`, store_id: STORE_ID, language_id: LANGUAGE_ID },
+        select: { keyword: true },
+    })
     return {
         type: "product",
         product_id: product.product_id,
@@ -1072,7 +1099,7 @@ const getFullProductData = async (productId) => {
         height: product.height,
 
         manufacturer: manufacturer
-            ? { manufacturer_id: manufacturer.manufacturer_id, name: manufacturer.name, image: manufacturer.image,manufacturer_seo_url: manufacturer_seo?.keyword ?? null }
+            ? { manufacturer_id: manufacturer.manufacturer_id, name: manufacturer.name, image: manufacturer.image, manufacturer_seo_url: manufacturer_seo?.keyword ?? null }
             : null,
 
         options,
@@ -1105,13 +1132,13 @@ const getFullProductData = async (productId) => {
 
 export const getSingleProductDetailsService = async (slugOrId) => {
     const resolved = await resolveSlugOrId(slugOrId);
-    
+
     if (!resolved || resolved.type !== "product") {
         return { type: "not_found" };
     }
 
     const data = await getFullProductData(resolved.id);
-   
+
     return data ?? { type: "not_found" };
 };
 
@@ -1396,76 +1423,76 @@ export const getSearchResultsService = async (query) => {
 
 export const mostviewdproductservice = async () => {
 
-  const result = await prisma.oc_product.findMany({
-    where: { status: true },
-    orderBy: { viewed: "desc" },
-    take: 4,
-    select: {
-      product_id: true,
-      model: true,
-      sku: true,
-      price: true,
-      status: true,
-      image: true,
-      quantity: true,
-      viewed: true,
-      oc_product_description: {
-        where: { language_id: 1 },
+    const result = await prisma.oc_product.findMany({
+        where: { status: true },
+        orderBy: { viewed: "desc" },
+        take: 4,
         select: {
-          name: true,
+            product_id: true,
+            model: true,
+            sku: true,
+            price: true,
+            status: true,
+            image: true,
+            quantity: true,
+            viewed: true,
+            oc_product_description: {
+                where: { language_id: 1 },
+                select: {
+                    name: true,
+                },
+            },
+            oc_product_special: {
+                where: {
+                    customer_group_id: 1,
+                },
+                orderBy: { priority: "asc" },
+                select: {
+                    price: true,
+                    date_start: true,
+                    date_end: true,
+                }
+            }
         },
-      },
-      oc_product_special: {
+    });
+
+    const productIds = result.map(p => `product_id=${p.product_id}`);
+    const seoUrls = await prisma.oc_seo_url.findMany({
         where: {
-          customer_group_id: 1,
+            query: { in: productIds },
+            store_id: 0,
+            language_id: 1,
         },
-        orderBy: { priority: "asc" },
-        select: {
-          price: true,
-          date_start: true,
-          date_end: true,
-        }
-      }
-    },
-  });
+        select: { query: true, keyword: true }
+    });
+    const slugMap = {};
+    seoUrls.forEach(s => {
+        const id = s.query.split('product_id=')[1];
+        slugMap[id] = s.keyword;
+    });
 
-  const productIds = result.map(p => `product_id=${p.product_id}`);
-  const seoUrls = await prisma.oc_seo_url.findMany({
-    where: {
-      query: { in: productIds },
-      store_id: 0,
-      language_id: 1,
-    },
-    select: { query: true, keyword: true }
-  });
-  const slugMap = {};
-  seoUrls.forEach(s => {
-    const id = s.query.split('product_id=')[1];
-    slugMap[id] = s.keyword;
-  });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const isValidSpecial = (special) => {
-    const start = new Date(special.date_start);
-    const end = new Date(special.date_end);
-    const startOk = isNaN(start.getTime()) || start <= today;
-    const endOk = isNaN(end.getTime()) || end >= today;
-    return startOk && endOk;
-  };
-
-  const flatItems = result.map(({ oc_product_description, oc_product_special, ...product }) => {
-    const validSpecial = oc_product_special.find(isValidSpecial);
-
-    return {
-      ...product,
-      name: oc_product_description[0]?.name ?? null,
-      original_price: product.price,
-      special_price: validSpecial?.price ?? null,
-      slug: slugMap[product.product_id] ?? null,
+    const isValidSpecial = (special) => {
+        const start = new Date(special.date_start);
+        const end = new Date(special.date_end);
+        const startOk = isNaN(start.getTime()) || start <= today;
+        const endOk = isNaN(end.getTime()) || end >= today;
+        return startOk && endOk;
     };
-  });
 
-  return flatItems;
+    const flatItems = result.map(({ oc_product_description, oc_product_special, ...product }) => {
+        const validSpecial = oc_product_special.find(isValidSpecial);
+
+        return {
+            ...product,
+            name: oc_product_description[0]?.name ?? null,
+            original_price: product.price,
+            special_price: validSpecial?.price ?? null,
+            slug: slugMap[product.product_id] ?? null,
+        };
+    });
+
+    return flatItems;
 }
