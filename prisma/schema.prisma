@@ -35,6 +35,9 @@ model oc_address {
   zone_id      Int    @default(0)
   custom_field String @db.Text
 
+  oc_country oc_country @relation(fields: [country_id], references: [country_id])
+  oc_zone    oc_zone    @relation(fields: [zone_id], references: [zone_id])
+
   @@index([country_id], map: "country_id")
   @@index([customer_id], map: "customer_id")
   @@index([zone_id], map: "zone_id")
@@ -350,17 +353,17 @@ model oc_bots_report {
 }
 
 model oc_cart {
-  cart_id              Int         @id @default(autoincrement()) @db.UnsignedInt
-  api_id               Int
-  customer_id          Int
-  session_id           String      @db.VarChar(32)
-  product_id           Int
-  recurring_id         Int
-  option               String      @db.Text
-  quantity             Int
-  date_added           DateTime    @db.DateTime(0)
+  cart_id      Int      @id @default(autoincrement()) @db.UnsignedInt
+  api_id       Int
+  customer_id  Int
+  session_id   String   @db.VarChar(32)
+  product_id   Int
+  recurring_id Int
+  option       String   @db.Text
+  quantity     Int
+  date_added   DateTime @db.DateTime(0)
 
-  oc_product            oc_product? @relation(fields: [product_id], references: [product_id])
+  oc_product oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@index([api_id, customer_id, session_id, product_id, recurring_id], map: "cart_id")
 }
@@ -451,6 +454,8 @@ model oc_country {
   address_format    String  @db.Text
   postcode_required Boolean
   status            Boolean @default(true)
+
+  ocAddresses oc_address[]
 }
 
 model oc_coupon {
@@ -734,11 +739,10 @@ model oc_customer_transaction {
 }
 
 model oc_customer_wishlist {
-  customer_id          Int
-  product_id           Int
-  date_added           DateTime    @db.DateTime(0)
-  ocProduct            oc_product? @relation(fields: [product_id], references: [product_id])
-  
+  customer_id Int
+  product_id  Int
+  date_added  DateTime    @db.DateTime(0)
+  ocProduct   oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@id([customer_id, product_id])
 }
@@ -1732,16 +1736,15 @@ model oc_product_canonical {
 }
 
 model oc_product_description {
-  product_id           Int
-  language_id          Int
-  name                 String      @db.VarChar(255)
-  description          String      @db.Text
-  tag                  String      @db.Text
-  meta_title           String      @db.VarChar(255)
-  meta_description     String      @db.VarChar(255)
-  meta_keyword         String      @db.VarChar(255)
-  ocProduct            oc_product? @relation(fields: [product_id], references: [product_id])
-  
+  product_id       Int
+  language_id      Int
+  name             String      @db.VarChar(255)
+  description      String      @db.Text
+  tag              String      @db.Text
+  meta_title       String      @db.VarChar(255)
+  meta_description String      @db.VarChar(255)
+  meta_keyword     String      @db.VarChar(255)
+  ocProduct        oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@id([product_id, language_id])
   @@index([name], map: "name")
@@ -1780,11 +1783,10 @@ model oc_product_filter {
 }
 
 model oc_product_image {
-  product_image_id     Int     @id @default(autoincrement())
-  product_id           Int
-  image                String? @db.VarChar(255)
-  sort_order           Int     @default(0)
-  
+  product_image_id Int     @id @default(autoincrement())
+  product_id       Int
+  image            String? @db.VarChar(255)
+  sort_order       Int     @default(0)
 
   ocProduct oc_product? @relation(fields: [product_id], references: [product_id])
 
@@ -1792,13 +1794,12 @@ model oc_product_image {
 }
 
 model oc_product_option {
-  product_option_id    Int         @id @default(autoincrement())
-  product_id           Int
-  option_id            Int
-  value                String      @db.Text
-  required             Boolean
-  ocProduct            oc_product? @relation(fields: [product_id], references: [product_id])
-
+  product_option_id Int         @id @default(autoincrement())
+  product_id        Int
+  option_id         Int
+  value             String      @db.Text
+  required          Boolean
+  ocProduct         oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@index([option_id], map: "option_id")
   @@index([product_id], map: "product_id")
@@ -1851,25 +1852,23 @@ model oc_product_reward {
 }
 
 model oc_product_special {
-  product_special_id   Int         @id @default(autoincrement())
-  product_id           Int
-  customer_group_id    Int
-  priority             Int         @default(1)
-  price                Decimal     @default(0.0000) @db.Decimal(15, 4)
-  date_start           DateTime    @default(dbgenerated("('0000-00-00')")) @db.Date
-  date_end             DateTime    @default(dbgenerated("('0000-00-00')")) @db.Date
-  ocProduct            oc_product? @relation(fields: [product_id], references: [product_id])
-  
+  product_special_id Int         @id @default(autoincrement())
+  product_id         Int
+  customer_group_id  Int
+  priority           Int         @default(1)
+  price              Decimal     @default(0.0000) @db.Decimal(15, 4)
+  date_start         DateTime    @default(dbgenerated("('0000-00-00')")) @db.Date
+  date_end           DateTime    @default(dbgenerated("('0000-00-00')")) @db.Date
+  ocProduct          oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@index([customer_group_id], map: "customer_group_id")
   @@index([product_id], map: "product_id")
 }
 
 model oc_product_to_category {
-  product_id           Int
-  category_id          Int
-  ocProduct            oc_product? @relation(fields: [product_id], references: [product_id])
-  
+  product_id  Int
+  category_id Int
+  ocProduct   oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@id([product_id, category_id])
   @@index([category_id], map: "category_id")
@@ -2014,19 +2013,18 @@ model oc_return_status {
 }
 
 model oc_review {
-  review_id            Int         @id @default(autoincrement())
-  image                String?     @db.VarChar(255)
-  order_id             Int
-  product_id           Int
-  customer_id          Int
-  author               String      @db.VarChar(64)
-  text                 String      @db.Text
-  rating               Int
-  status               Boolean     @default(false)
-  date_added           DateTime    @db.DateTime(0)
-  date_modified        DateTime    @db.DateTime(0)
-  ocProduct            oc_product? @relation(fields: [product_id], references: [product_id])
-  
+  review_id     Int         @id @default(autoincrement())
+  image         String?     @db.VarChar(255)
+  order_id      Int
+  product_id    Int
+  customer_id   Int
+  author        String      @db.VarChar(64)
+  text          String      @db.Text
+  rating        Int
+  status        Boolean     @default(false)
+  date_added    DateTime    @db.DateTime(0)
+  date_modified DateTime    @db.DateTime(0)
+  ocProduct     oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@index([customer_id], map: "customer_id")
   @@index([order_id], map: "order_id")
@@ -2286,11 +2284,12 @@ model oc_weight_class_description {
 }
 
 model oc_zone {
-  zone_id    Int     @id @default(autoincrement())
-  country_id Int
-  name       String  @db.VarChar(128)
-  code       String  @db.VarChar(32)
-  status     Boolean @default(true)
+  zone_id     Int          @id @default(autoincrement())
+  country_id  Int
+  name        String       @db.VarChar(128)
+  code        String       @db.VarChar(32)
+  status      Boolean      @default(true)
+  ocAddresses oc_address[]
 
   @@index([country_id], map: "country_id")
 }
