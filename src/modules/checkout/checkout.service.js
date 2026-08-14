@@ -225,7 +225,7 @@ const buildTransactionComment = (pi) => {
   </div>
 
 </div>`.replace(/\n\s*/g, "");
-};                  
+};
 const STRIPE_PI_EXPAND = [
   "latest_charge",
   "latest_charge.balance_transaction",
@@ -331,10 +331,10 @@ export const placeOrderService = async (orderData) => {
     stripe_payment_intent_id = null, stripe_client_secret = null,
     coupon_id = "",
     discountAmount = 0,
-    
+
   } = orderData;
 
-
+  console.log("Ip",ip)
 
   const finalFirstname = firstname || payment_firstname;
   const finalLastname = lastname || payment_lastname;
@@ -351,7 +351,7 @@ export const placeOrderService = async (orderData) => {
   const { totals: builtTotals, grandTotal } = totals
     ? { totals, grandTotal: totals.find((t) => t.code === "total")?.value ?? 0 }
     : buildTotals(products, shipping_cost);
-
+  
   const orderFields = {
     customer_id, customer_group_id,
     firstname: finalFirstname, lastname: finalLastname,
@@ -375,7 +375,7 @@ export const placeOrderService = async (orderData) => {
     store_url: store_url || STORE_URL,
     date_modified: newYorkTime,
   };
-
+  
   const metaArgs = {
     firstname: finalFirstname, lastname: finalLastname,
     email: finalEmail, telephone: finalTelephone,
@@ -559,7 +559,7 @@ export const placeOrderService = async (orderData) => {
     const order = await tx.oc_order.create({
       data: {
         invoice_no: 0, invoice_prefix, store_id, fax: "",
-        hprmp_repetition:0,hprmp_active:false,hprmp_last_send:null,
+        hprmp_repetition: 0, hprmp_active: false, hprmp_last_send: null,
         affiliate_id, commission, marketing_id, tracking,
         forwarded_ip, user_agent, accept_language,
         date_added: newYorkTime,
@@ -588,22 +588,22 @@ export const placeOrderService = async (orderData) => {
   });
 
   // ── Stripe: update existing PI (fire and forget) ──
+  // ── Stripe: update existing PI (ab AWAIT karo) ──
   if (stripe_payment_intent_id) {
-    (async () => {
-      try {
-        const pi = await stripe.paymentIntents.retrieve(stripe_payment_intent_id);
-        const updateData = {
-          description: `${STORE_NAME}: Order #${result.order_id}`,
-          metadata: buildStripeMetadata({ orderId: result.order_id, ...metaArgs }),
-        };
-        if (pi.status !== "succeeded") updateData.amount = Math.round(grandTotal * 100);
-        await stripe.paymentIntents.update(stripe_payment_intent_id, updateData);
-      } catch (e) {
-        console.error("Stripe update (existing PI) failed:", e.message);
-      }
-    })();
+    try {
+      const pi = await stripe.paymentIntents.retrieve(stripe_payment_intent_id);
+      const updateData = {
+        description: `${STORE_NAME}: Order #${result.order_id}`,
+        metadata: buildStripeMetadata({ orderId: result.order_id, ...metaArgs }),
+      };
+      if (pi.status !== "succeeded") updateData.amount = Math.round(grandTotal * 100);
+      const updatedPi = await stripe.paymentIntents.update(stripe_payment_intent_id, updateData);
 
-    // ── Stripe: create new PI (awaited — client needs the secret) ──
+      result.stripe_client_secret = updatedPi.client_secret;
+      result.stripe_payment_intent_id = updatedPi.id;
+    } catch (e) {
+      console.error("Stripe update (existing PI) failed:", e.message);
+    }
   } else if (payment_code !== "cod") {
     try {
       const pi = await stripe.paymentIntents.create({
