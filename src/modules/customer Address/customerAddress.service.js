@@ -21,6 +21,7 @@ export const getAddressesByCustomer = async (customerId) => {
             address_id: true,
             country_id: true,
             zone_id: true,
+            custom_field: true,
             oc_country: {
                 select: {
                     name: true,
@@ -50,6 +51,8 @@ export const getAddressesByCustomer = async (customerId) => {
         zone_name: addr.oc_zone.name,
         zone_id: addr.zone_id,
         address_id: addr.address_id,
+        // 1. Step: custom_field JSON string ko safely parse karo, "1" key se telephone nikalo
+        telephone: safeParseCustomField(addr.custom_field)?.["1"] || "",
         is_default: addr.address_id === customer.address_id,
     }));
 };
@@ -76,7 +79,18 @@ export const getAddressById = async (addressId, customerId) => {
         throw err;
     }
 
-    return address;
+    // 2. Step: customer ka current default address_id nikalo
+    const customer = await prisma.oc_customer.findUnique({
+        where: { customer_id: parseInt(customerId) },
+        select: { address_id: true },
+    });
+
+    // 3. Step: compare karke is_default flag add karo, "1" key se telephone parse karke bhejo
+    return {
+        ...address,
+        telephone: safeParseCustomField(address.custom_field)?.["1"] || "",
+        is_default: address.address_id === customer?.address_id,
+    };
 };
 
 export const createAddressServices = async (customerId, data, ip) => {
@@ -126,7 +140,8 @@ export const createAddressServices = async (customerId, data, ip) => {
             postcode: data.postcode,
             country_id: parseInt(data.country_id),
             zone_id: parseInt(data.zone_id),
-            custom_field: data.custom_field || "",
+            // 4. Step: telephone ko "1" key ke andar wrap karke JSON string bana ke save karo
+            custom_field: JSON.stringify({ "1": data.telephone || "" }),
         },
 
     });
@@ -154,6 +169,7 @@ export const createAddressServices = async (customerId, data, ip) => {
 
     return {
         ...address,
+        telephone: data.telephone || "",
         is_default: data.default === true || data.default === "1",
     };
 };
@@ -199,11 +215,20 @@ export const updateAddressServices = async (addressId, customerId, data, ip) => 
     const updateData = {};
     const fields = [
         "firstname", "lastname", "company",
-        "address_1", "address_2", "city", "postcode", "custom_field",
+        "address_1", "address_2", "city", "postcode",
     ];
     fields.forEach((f) => { if (data[f] !== undefined) updateData[f] = data[f]; });
     if (data.country_id) updateData.country_id = parseInt(data.country_id);
     if (data.zone_id) updateData.zone_id = parseInt(data.zone_id);
+
+    // 5. Step: telephone update ho raha hai toh purane custom_field ke saath merge karke save karo ("1" key)
+    if (data.telephone !== undefined) {
+        const existingCustomField = safeParseCustomField(existing.custom_field);
+        updateData.custom_field = JSON.stringify({
+            ...existingCustomField,
+            "1": data.telephone,
+        });
+    }
 
     const updated = await prisma.oc_address.update({
         where: { address_id: parseInt(addressId) },
@@ -239,6 +264,7 @@ export const updateAddressServices = async (addressId, customerId, data, ip) => 
 
     return {
         ...updated,
+        telephone: safeParseCustomField(updated.custom_field)?.["1"] || "",
         is_default: data.default === true || data.default === "1",
     };
 };
@@ -293,4 +319,14 @@ export const getZonesByCountryService = async (countryId) => {
         orderBy: { name: 'asc' }
     })
     return zone;
+}
+
+// 6. Step: helper function — custom_field ko safely JSON parse karo, error aaye toh empty object do
+function safeParseCustomField(customField) {
+    if (!customField) return {};
+    try {
+        return JSON.parse(customField);
+    } catch (e) {
+        return {};
+    }
 }
