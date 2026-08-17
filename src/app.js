@@ -20,6 +20,7 @@ import customerAddressRoutes from './modules/customer Address/customerAddress.ro
 import checkoutRouter, { webhookRouter } from './modules/checkout/checkout.routes.js';
 import shippingRouter from './modules/shipping rate/shipping_rates.routes.js';
 import coupon_router from './modules/coupon/coupon.routes.js';
+import orderRouter from './modules/customer order details/order.routes.js';
 export const createApp = () => {
 
     const app = express();
@@ -66,7 +67,8 @@ export const createApp = () => {
     app.use('/api/v1/checkout', checkoutRouter)
     app.use('/api/v1/shipping-rate',shippingRouter)
     app.use('/api/v1/coupon',coupon_router)
-
+    app.use('/api/v1/order-details',orderRouter)
+    
 
     // ------------- meta api ----------------- //
 

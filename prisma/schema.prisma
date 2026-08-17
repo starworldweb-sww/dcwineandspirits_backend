@@ -1500,6 +1500,11 @@ model oc_order {
   date_modified           DateTime  @db.DateTime(0)
   gglmrchntchksuc_ordflag Boolean?  @default(false)
 
+  oc_order_history  oc_order_history[]
+  oc_order_tracking oc_order_tracking[]
+  oc_order_product  oc_order_product[]
+  oc_order_total     oc_order_total[]
+
   @@index([affiliate_id], map: "affiliate_id")
   @@index([currency_id], map: "currency_id")
   @@index([customer_group_id], map: "customer_group_id")
@@ -1522,6 +1527,7 @@ model oc_order_history {
   notify           Boolean  @default(false)
   comment          String   @db.Text
   date_added       DateTime @db.DateTime(0)
+  oc_order         oc_order @relation(fields: [order_id], references: [order_id])
 
   @@index([order_id], map: "order_id")
   @@index([order_status_id], map: "order_status_id")
@@ -1544,16 +1550,17 @@ model oc_order_option {
 }
 
 model oc_order_product {
-  order_product_id Int     @id @default(autoincrement())
+  order_product_id Int      @id @default(autoincrement())
   order_id         Int
   product_id       Int
-  name             String  @db.VarChar(255)
-  model            String  @db.VarChar(64)
+  name             String   @db.VarChar(255)
+  model            String   @db.VarChar(64)
   quantity         Int
-  price            Decimal @default(0.0000) @db.Decimal(15, 4)
-  total            Decimal @default(0.0000) @db.Decimal(15, 4)
-  tax              Decimal @default(0.0000) @db.Decimal(15, 4)
+  price            Decimal  @default(0.0000) @db.Decimal(15, 4)
+  total            Decimal  @default(0.0000) @db.Decimal(15, 4)
+  tax              Decimal  @default(0.0000) @db.Decimal(15, 4)
   reward           Int
+  oc_order         oc_order @relation(fields: [order_id], references: [order_id])
 
   @@index([order_id], map: "order_id")
   @@index([order_id], map: "order_id_2")
@@ -1620,12 +1627,13 @@ model oc_order_status {
 }
 
 model oc_order_total {
-  order_total_id Int     @id @default(autoincrement())
+  order_total_id Int      @id @default(autoincrement())
   order_id       Int
-  code           String  @db.VarChar(32)
-  title          String  @db.VarChar(255)
-  value          Decimal @default(0.0000) @db.Decimal(15, 4)
+  code           String   @db.VarChar(32)
+  title          String   @db.VarChar(255)
+  value          Decimal  @default(0.0000) @db.Decimal(15, 4)
   sort_order     Int
+  oc_order       oc_order @relation(fields: [order_id], references: [order_id])
 
   @@index([code], map: "code")
   @@index([order_id], map: "order_id")
@@ -1638,6 +1646,8 @@ model oc_order_tracking {
   shipingcompany    String   @db.VarChar(255)
   tracking_number   String   @db.VarChar(200)
   date_added        DateTime @db.Date
+
+  oc_order oc_order @relation(fields: [order_id], references: [order_id])
 
   @@index([order_id], map: "order_id")
 }
