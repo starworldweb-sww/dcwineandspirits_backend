@@ -551,90 +551,86 @@ export const forgotPasswordRequestService = async (email) => {
   });
 
   const resetLink = `${process.env.FRONTEND_URL}/account/reset?code=${resetCode}`;
-
-  await transporter.sendMail({
-    from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-    to: customer.email,
-    subject: "Reset Your Password - Wine & champagne gifts",
-    html: `<!DOCTYPE html>
+await transporter.sendMail({
+  from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+  to: customer.email,
+  subject: "Reset Your Password - DC Wine & Spirits",
+  html: `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Password Reset — Wine & champagne gifts</title>
+<title>Password Reset — DC Wine & Spirits</title>
+<style>
+  @media only screen and (max-width: 600px) {
+    .email-wrapper { width: 100% !important; }
+    .email-padding { padding-left: 24px !important; padding-right: 24px !important; }
+    .header-padding { padding: 36px 24px 32px !important; }
+    .footer-padding { padding: 28px 24px !important; }
+    .cta-button { display: block !important; width: 100% !important; box-sizing: border-box; }
+    .h1-title { font-size: 24px !important; }
+    .lock-badge { width: 60px !important; height: 60px !important; font-size: 26px !important; line-height: 60px !important; }
+  }
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:#f0f0f0;font-family:Georgia,serif;">
+<body style="margin:0;padding:0;background-color:#f4f1ee;font-family:'Hind Madurai',Arial,sans-serif;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f0f0;padding:40px 0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f1ee;padding:40px 0;">
   <tr><td align="center">
 
-    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #d0d0d0;">
+    <table class="email-wrapper" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 
-      <!-- TOP ACCENT BAR -->
+      <!-- TOP ACCENT BAR (gold) -->
       <tr>
-        <td style="background:#111111;height:4px;font-size:0;line-height:0;">&nbsp;</td>
+        <td style="background:linear-gradient(90deg,#98022e,#c99000);height:5px;font-size:0;line-height:0;">&nbsp;</td>
       </tr>
 
       <!-- HEADER -->
       <tr>
-        <td style="background:#111111;padding:48px 48px 40px;text-align:center;">
+        <td class="header-padding" style="background:#8c1a3c;padding:48px 48px 40px;text-align:center;">
 
           <!-- Brand -->
-          <p style="margin:0 0 32px;font-family:Georgia,serif;font-size:11px;letter-spacing:6px;text-transform:uppercase;color:#888888;">
-            ── &nbsp; Wine & champagne gifts &nbsp; ──
+          <p style="margin:0 0 28px;font-family:'Hind Madurai',Arial,sans-serif;font-size:11px;letter-spacing:5px;text-transform:uppercase;color:#e8c9a8;">
+            ── &nbsp; DC Wine &amp; Spirits &nbsp; ──
           </p>
 
           <!-- Lock icon box -->
-          <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto 26px;">
             <tr>
-              <td style="width:72px;height:72px;background:#ffffff;text-align:center;vertical-align:middle;font-size:32px;line-height:72px;">
+              <td class="lock-badge" style="width:72px;height:72px;border-radius:50%;background:#c99000;text-align:center;vertical-align:middle;font-size:32px;line-height:72px;">
                 🔐
               </td>
             </tr>
           </table>
 
-          <h1 style="margin:0 0 10px;font-family:Georgia,serif;font-size:30px;font-weight:400;color:#ffffff;letter-spacing:1px;">
+          <h1 class="h1-title" style="margin:0 0 10px;font-family:'Hind Madurai',Arial,sans-serif;font-size:28px;font-weight:600;color:#ffffff;letter-spacing:0.5px;">
             Password Reset
           </h1>
-          <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:#777777;letter-spacing:1px;">
+          <p style="margin:0;font-family:'Sarabun',Arial,sans-serif;font-size:13px;color:#e0b9c4;letter-spacing:0.5px;">
             We received a request to reset your password
           </p>
 
         </td>
       </tr>
 
-      <!-- THIN RULE -->
-      <tr>
-        <td style="background:#111111;padding:0 48px;">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="border-top:1px solid #333333;font-size:0;line-height:0;">&nbsp;</td></tr>
-          </table>
-        </td>
-      </tr>
-
       <!-- BODY -->
       <tr>
-        <td style="padding:48px 48px 40px;background:#ffffff;">
+        <td class="email-padding" style="padding:44px 48px 40px;background:#ffffff;">
 
           <!-- Greeting -->
-          <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:18px;font-weight:400;color:#111111;">
-            Hi <strong style="font-weight:700;">${customer?.firstname}</strong>,
+          <p style="margin:0 0 8px;font-family:'Hind Madurai',Arial,sans-serif;font-size:18px;font-weight:500;color:#2b2b2b;">
+            Hi <strong style="font-weight:700;color:#8c1a3c;">${customer?.firstname}</strong>,
           </p>
-          <p style="margin:0 0 32px;font-family:Arial,sans-serif;font-size:14px;line-height:1.8;color:#555555;">
-            Someone requested a password reset for your <strong style="color:#111111;">Wine and champagne gifts</strong> account. Click the button below to create a new password. This link expires in <strong style="color:#111111;">1 hour</strong>.
+          <p style="margin:0 0 32px;font-family:'Sarabun',Arial,sans-serif;font-size:14px;line-height:1.8;color:#555555;">
+            Someone requested a password reset for your <strong style="color:#8c1a3c;">DC Wine &amp; Spirits</strong> account. Click the button below to create a new password. This link expires in <strong style="color:#8c1a3c;">1 hour</strong>.
           </p>
-
-          <!-- DIVIDER -->
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-            <tr><td style="border-top:1px solid #eeeeee;font-size:0;line-height:0;">&nbsp;</td></tr>
-          </table>
 
           <!-- CTA BUTTON -->
-          <table cellpadding="0" cellspacing="0" style="margin:0 auto 32px;">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto 32px;width:100%;">
             <tr>
-              <td style="background:#111111;text-align:center;">
-                <a href=${resetLink}
-                   style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;padding:18px 52px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">
+              <td align="center">
+                <a href=${resetLink} class="cta-button"
+                   style="display:inline-block;background:#98022e;color:#ffffff;text-decoration:none;padding:16px 52px;border-radius:6px;font-family:'Hind Madurai',Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-align:center;">
                   Reset My Password
                 </a>
               </td>
@@ -643,15 +639,15 @@ export const forgotPasswordRequestService = async (email) => {
 
           <!-- DIVIDER -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-            <tr><td style="border-top:1px solid #eeeeee;font-size:0;line-height:0;">&nbsp;</td></tr>
+            <tr><td style="border-top:1px solid #f0ebe6;font-size:0;line-height:0;">&nbsp;</td></tr>
           </table>
 
           <!-- WARNING BOX -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
             <tr>
-              <td style="border:1px solid #e0e0e0;border-left:3px solid #111111;padding:16px 20px;background:#f9f9f9;">
-                <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;color:#444444;line-height:1.6;">
-                  <strong style="color:#111111;">Didn't request this?</strong><br>
+              <td style="border-radius:6px;border:1px solid #f0e4d0;border-left:4px solid #c99000;padding:16px 20px;background:#fdf8f0;">
+                <p style="margin:0;font-family:'Sarabun',Arial,sans-serif;font-size:13px;color:#5a4a2f;line-height:1.6;">
+                  <strong style="color:#8c1a3c;">Didn't request this?</strong><br>
                   You can safely ignore this email. Your password will remain unchanged and no action is needed.
                 </p>
               </td>
@@ -659,13 +655,13 @@ export const forgotPasswordRequestService = async (email) => {
           </table>
 
           <!-- FALLBACK LINK -->
-          <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:12px;color:#999999;letter-spacing:0.5px;">
+          <p style="margin:0 0 8px;font-family:'Sarabun',Arial,sans-serif;font-size:12px;color:#999999;letter-spacing:0.3px;">
             If the button doesn't work, copy and paste this link into your browser:
           </p>
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td style="background:#f5f5f5;border:1px solid #e8e8e8;padding:12px 16px;word-break:break-all;">
-                <a href=${resetLink} style="font-family:Arial,sans-serif;font-size:12px;color:#111111;text-decoration:underline;">
+              <td style="background:#f4f1ee;border:1px solid #ece5dd;border-radius:6px;padding:12px 16px;word-break:break-all;">
+                <a href=${resetLink} style="font-family:'Sarabun',Arial,sans-serif;font-size:12px;color:#8c1a3c;text-decoration:underline;">
                   ${resetLink}
                 </a>
               </td>
@@ -677,13 +673,13 @@ export const forgotPasswordRequestService = async (email) => {
 
       <!-- SECURITY NOTE BAR -->
       <tr>
-        <td style="background:#f5f5f5;border-top:1px solid #e8e8e8;border-bottom:1px solid #e8e8e8;padding:16px 48px;">
+        <td style="background:#f9f6f2;border-top:1px solid #ece5dd;border-bottom:1px solid #ece5dd;padding:16px 48px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td style="width:20px;vertical-align:top;font-size:14px;padding-top:1px;">🔒</td>
               <td style="padding-left:10px;">
-                <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#888888;line-height:1.6;letter-spacing:0.3px;">
-                  This email was sent from a secure server. Wine & champagne gifts will never ask for your password via email. If you're unsure, contact our support team directly.
+                <p style="margin:0;font-family:'Sarabun',Arial,sans-serif;font-size:11px;color:#8a8a8a;line-height:1.6;letter-spacing:0.2px;">
+                  This email was sent from a secure server. DC Wine &amp; Spirits will never ask for your password via email. If you're unsure, contact our support team directly.
                 </p>
               </td>
             </tr>
@@ -693,32 +689,32 @@ export const forgotPasswordRequestService = async (email) => {
 
       <!-- FOOTER -->
       <tr>
-        <td style="padding:32px 48px;text-align:center;background:#ffffff;">
+        <td class="footer-padding" style="padding:32px 48px;text-align:center;background:#ffffff;">
 
           <!-- Brand mark -->
-          <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:#111111;">
-            Wine & champagne gifts
+          <p style="margin:0 0 14px;font-family:'Hind Madurai',Arial,sans-serif;font-size:14px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#8c1a3c;">
+            DC Wine &amp; Spirits
           </p>
-          <p style="margin:0 0 16px;font-family:Georgia,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bbbbbb;">
-            Premium Gifts Collection
+          <p style="margin:0 0 16px;font-family:'Sarabun',Arial,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c99000;">
+            Fine Wines &amp; Spirits
           </p>
 
           <!-- Thin rule -->
-          <table width="80" cellpadding="0" cellspacing="0" style="margin:0 auto 16px;">
-            <tr><td style="border-top:1px solid #e0e0e0;font-size:0;">&nbsp;</td></tr>
+          <table width="60" cellpadding="0" cellspacing="0" style="margin:0 auto 16px;">
+            <tr><td style="border-top:2px solid #c99000;font-size:0;">&nbsp;</td></tr>
           </table>
 
-          <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:11px;color:#aaaaaa;line-height:1.6;">
-            © 2025 Wine & champagne gifts. All rights reserved.<br>
+          <p style="margin:0 0 8px;font-family:'Sarabun',Arial,sans-serif;font-size:11px;color:#aaaaaa;line-height:1.6;">
+            © 2025 DC Wine &amp; Spirits. All rights reserved.<br>
             This is an automated email — please do not reply.
           </p>
-          <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;">
-            <a href="https://www.wineandchampagnegifts.com" style="color:#555555;text-decoration:none;letter-spacing:1px;">wineandchampagnegifts.com
+          <p style="margin:0;font-family:'Sarabun',Arial,sans-serif;font-size:11px;">
+            <a href="https://www.dcwineandspirits.com" style="color:#8c1a3c;text-decoration:none;letter-spacing:1px;">dcwineandspirits.com
             </a>
             &nbsp;·&nbsp;
-            <a href="#" style="color:#555555;text-decoration:none;letter-spacing:1px;">Unsubscribe</a>
+            <a href="#" style="color:#8c1a3c;text-decoration:none;letter-spacing:1px;">Unsubscribe</a>
             &nbsp;·&nbsp;
-            <a href="#" style="color:#555555;text-decoration:none;letter-spacing:1px;">Privacy Policy</a>
+            <a href="#" style="color:#8c1a3c;text-decoration:none;letter-spacing:1px;">Privacy Policy</a>
           </p>
 
         </td>
@@ -726,7 +722,7 @@ export const forgotPasswordRequestService = async (email) => {
 
       <!-- BOTTOM ACCENT BAR -->
       <tr>
-        <td style="background:#111111;height:4px;font-size:0;line-height:0;">&nbsp;</td>
+        <td style="background:linear-gradient(90deg,#c99000,#98022e);height:5px;font-size:0;line-height:0;">&nbsp;</td>
       </tr>
 
     </table>
@@ -737,7 +733,7 @@ export const forgotPasswordRequestService = async (email) => {
 
 </body>
 </html> `,
-  });
+});
 
   return { message: "Password reset link sent to your email" };
 };

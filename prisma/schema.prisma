@@ -742,7 +742,7 @@ model oc_customer_wishlist {
   customer_id Int
   product_id  Int
   date_added  DateTime    @db.DateTime(0)
-  ocProduct   oc_product? @relation(fields: [product_id], references: [product_id])
+  oc_product   oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@id([customer_id, product_id])
 }
