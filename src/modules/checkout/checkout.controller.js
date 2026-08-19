@@ -2,7 +2,7 @@ import { prisma } from "../../../lib/prisma.js";
 import { successResponse } from "../../utils/apiResponse.js";
 import { createAddressServices } from "../customer Address/customerAddress.service.js";
 import { registerCustomer } from "../customer/customer.service.js";
-import { clearCartService } from "../cart/cart.service.js";
+// import { clearCartService } from "../cart/cart.service.js";
 import { placeOrderService, _sendConfirmationEmails, } from "./checkout.service.js";
 import Stripe from 'stripe';
 import { DateTime } from "luxon";
@@ -51,7 +51,7 @@ export const placeOrder = async (req, res) => {
                     zone_id: parseInt(body.payment_zone_id),
                     custom_field: body.payment_custom_field || "",
                 };
-                await createAddressServices(customerDetails.customer_id, addressData);
+                await createAddressServices(customerDetails.customer_id, addressData,ip);
             } catch (addrErr) {
                 console.log("Failed to create address for COD register user, continuing order:", addrErr.message);
             }
@@ -131,19 +131,7 @@ export const placeOrder = async (req, res) => {
         user_agent:userAgent
     });
 
-    const shouldClearCart =
-        body.payment_code === 'cod' ||
-        !!body.stripe_payment_intent_id;
-
-    if (shouldClearCart) {
-        try {
-            const clearCustomerId = customerDetails?.customer_id ?? customer?.id ?? body.customer_id ?? req.customer?.customer_id ?? 0;
-            const clearSessionId = req.cookies?.guest_session || '';
-            await clearCartService({ sessionId: clearSessionId, customerId: clearCustomerId });
-        } catch (clearErr) {
-            console.error("Failed to clear cart after order:", clearErr.message);
-        }
-    }
+    
 
     return res.status(201).json({
         success: true,
@@ -331,13 +319,13 @@ export const handleWebhook = async (req, res) => {
                         comment: order.comment
                     });
 
-                    if (order.customer_id > 0) {
-                        try {
-                            await clearCartService({ sessionId: '', customerId: order.customer_id });
-                        } catch (clearErr) {
-                            console.error("Failed to clear cart in webhook:", clearErr.message);
-                        }
-                    }
+                    // if (order.customer_id > 0) {
+                    //     try {
+                    //         await clearCartService({ sessionId: '', customerId: order.customer_id });
+                    //     } catch (clearErr) {
+                    //         console.error("Failed to clear cart in webhook:", clearErr.message);
+                    //     }
+                    // }
                 } catch (err) {
                     console.error("Error processing payment_intent.succeeded webhook:", err);
                 }

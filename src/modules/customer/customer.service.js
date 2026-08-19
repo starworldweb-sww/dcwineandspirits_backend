@@ -6,6 +6,8 @@ import { DateTime } from "luxon";
 import { transporter } from "../../config/nodemiller.js";
 import { generateToken } from "../../utils/generateToken.js";
 import { getNewsletterWelcomeTemplate } from "../../utils/getNewsletterWelcomeTemplate.js";
+import { mergeGuestWishlistService } from "../wishlish/wishlist.service.js";
+import { mergeGuestCartService } from "../cart/cart.service.js";
 
 export const sha1 = (str) => {
   return crypto.createHash("sha1").update(str).digest("hex");
@@ -170,25 +172,25 @@ export const loginCustomer = async (data, ip, cookies = {}) => {
     },
   });
 
-  //   const guestSessionId = cookies?.guest_session || '';
-  //   if (guestSessionId) {
-  //     await mergeGuestCartService({
-  //       sessionId: guestSessionId,
-  //       customerId: customer.customer_id,
-  //     });
-  //   }
+    const guestSessionId = cookies?.guest_session || '';
+    if (guestSessionId) {
+      await mergeGuestCartService({
+        sessionId: guestSessionId,
+        customerId: customer.customer_id,
+      });
+    }
 
   const guestWishlistCookie = cookies?.guest_wishlist || "";
   const guestProductIds = guestWishlistCookie
     ? guestWishlistCookie.split(",").map(Number).filter(Boolean)
     : [];
 
-  //   if (guestProductIds.length > 0) {
-  //     await mergeGuestWishlistService({
-  //       customerId: customer.customer_id,
-  //       guestProductIds,
-  //     });
-  //   }
+    if (guestProductIds.length > 0) {
+      await mergeGuestWishlistService({
+        customerId: customer.customer_id,
+        guestProductIds,
+      });
+    }
 
   const token = generateToken({
     customer_id: customer.customer_id,
@@ -276,18 +278,18 @@ export const registerCustomer = async (data, ip) => {
     },
   });
 
-  //   await prisma.oc_customer_activity.create({
-  //     data: {
-  //       customer_id: newCustomer.customer_id || 0,
-  //       key: "register new customer",
-  //       data: JSON.stringify({
-  //         "customer_id": newCustomer?.customer_id,
-  //         "name": `${newCustomer?.firstname} ${newCustomer?.lastname}`,
-  //       }),
-  //       ip: ip,
-  //       date_added: newYorkTime
-  //     }
-  //   })
+    await prisma.oc_customer_activity.create({
+      data: {
+        customer_id: newCustomer.customer_id || 0,
+        key: "register new customer",
+        data: JSON.stringify({
+          "customer_id": newCustomer?.customer_id,
+          "name": `${newCustomer?.firstname} ${newCustomer?.lastname}`,
+        }),
+        ip: ip,
+        date_added: newYorkTime
+      }
+    })
 await transporter.sendMail({
     from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
     to: email,
