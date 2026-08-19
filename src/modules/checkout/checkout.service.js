@@ -448,8 +448,7 @@ export const placeOrderService = async (orderData) => {
         result.stripe_payment_intent_id = pi.id;
      
         if (pi.status === "succeeded") {
-            console.log("ip",ip)
-
+          
           const postPaymentTasks = [
             prisma.oc_order.update({
               where: { order_id: result.order_id },

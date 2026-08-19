@@ -110,8 +110,6 @@ export const getWishlistService = async (query,{ customerId, LANGUAGE_ID = 1 }) 
   }));
 
 
-  console.log(formattedItems)
-
   return {
     total,
     page,
