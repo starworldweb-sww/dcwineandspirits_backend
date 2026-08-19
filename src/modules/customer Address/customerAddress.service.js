@@ -128,23 +128,6 @@ export const createAddressServices = async (customerId, data, ip) => {
         throw err;
     }
 
-    const address = await prisma.oc_address.create({
-        data: {
-            customer_id: parseInt(customerId),
-            firstname: data.firstname,
-            lastname: data.lastname,
-            company: data.company || "",
-            address_1: data.address_1,
-            address_2: data.address_2 || "",
-            city: data.city,
-            postcode: data.postcode,
-            country_id: parseInt(data.country_id),
-            zone_id: parseInt(data.zone_id),
-            // 4. Step: telephone ko "1" key ke andar wrap karke JSON string bana ke save karo
-            custom_field: JSON.stringify({ "1": data.telephone || "" }),
-        },
-
-    });
 
     await prisma.oc_customer_activity.create({
         data: {
@@ -157,7 +140,24 @@ export const createAddressServices = async (customerId, data, ip) => {
             ip: ip,
             date_added: newYorkTime
         }
-    })
+    }) 
+    const address = await prisma.oc_address.create({
+        data: {
+            customer_id: parseInt(customerId),
+            firstname: data.firstname,
+            lastname: data.lastname,
+            company: data.company || "",
+            address_1: data.address_1,
+            address_2: data.address_2 || "",
+            city: data.city,
+            postcode: data.postcode,
+            country_id: parseInt(data.country_id),
+            zone_id: parseInt(data.zone_id),
+            custom_field: JSON.stringify({ "1": data.telephone || "" }),
+        },
+
+    });
+
 
 
     if (data.default === true || data.default === "1") {
@@ -187,10 +187,10 @@ export const updateAddressServices = async (addressId, customerId, data, ip) => 
     });
 
     const customer = await prisma.oc_customer.findUnique({
-        where:{customer_id:customerId}
+        where: { customer_id: customerId }
     })
-     
-    
+
+
 
     if (!existing) {
         const err = new Error("Address not found");
@@ -239,7 +239,7 @@ export const updateAddressServices = async (addressId, customerId, data, ip) => 
         },
     });
 
-    
+
 
     await prisma.oc_customer_activity.create({
         data: {

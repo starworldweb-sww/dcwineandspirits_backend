@@ -249,14 +249,14 @@ export const handlePostPaymentRegistration = async (orderId, checkoutType, regis
   }
 
   if (customerDetails) {
-    // Run order update + address creation in parallel
+   
     await Promise.all([
       prisma.oc_order.update({
         where: { order_id: orderId },
         data: { customer_id: customerDetails.customer_id },
       }),
       addressData?.country_id && addressData?.zone_id
-        ? createAddressServices(customerDetails.customer_id, addressData).catch((e) =>
+        ? createAddressServices(customerDetails.customer_id, addressData,ip).catch((e) =>
           console.log("Failed to create address after payment:", e.message)
         )
         : Promise.resolve(),
@@ -334,7 +334,6 @@ export const placeOrderService = async (orderData) => {
 
   } = orderData;
 
-  console.log("Ip",ip)
 
   const finalFirstname = firstname || payment_firstname;
   const finalLastname = lastname || payment_lastname;
@@ -381,7 +380,6 @@ export const placeOrderService = async (orderData) => {
     email: finalEmail, telephone: finalTelephone,
     customer_id, ip, products, store_name, comment,
   };
-
   // ═══════════════════════════════════════════════════════════
   // CASE 1: UPDATE existing missing order
   // ═══════════════════════════════════════════════════════════
@@ -448,8 +446,10 @@ export const placeOrderService = async (orderData) => {
 
         result.stripe_client_secret = pi.client_secret;
         result.stripe_payment_intent_id = pi.id;
-
+     
         if (pi.status === "succeeded") {
+            console.log("ip",ip)
+
           const postPaymentTasks = [
             prisma.oc_order.update({
               where: { order_id: result.order_id },
@@ -483,7 +483,7 @@ export const placeOrderService = async (orderData) => {
                   "name": `${firstname} ${lastname}`,
                   "order_id": result?.order_id,
                 }),
-                ip: ip,
+                ip: String(ip),
                 date_added: newYorkTime
               }
             }),

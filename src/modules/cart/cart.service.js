@@ -382,7 +382,6 @@ export const mergeGuestCartService = async ({ sessionId, customerId }) => {
     where: { session_id: sessionId, customer_id: 0 },
   });
 
-
   if (guestItems.length === 0) return;
 
   for (const item of guestItems) {
@@ -396,19 +395,20 @@ export const mergeGuestCartService = async ({ sessionId, customerId }) => {
     });
 
     if (existing) {
+      // safe: update the *existing* row, then try to delete the guest row
       await prisma.oc_cart.update({
         where: { cart_id: existing.cart_id },
         data: { quantity: existing.quantity + item.quantity },
       });
-      await prisma.oc_cart.delete({ where: { cart_id: item.cart_id } });
+      await prisma.oc_cart.deleteMany({ where: { cart_id: item.cart_id } }); // deleteMany = no throw if already gone
     } else {
-      await prisma.oc_cart.update({
+      const result = await prisma.oc_cart.updateMany({
         where: { cart_id: item.cart_id },
-        data: {
-          customer_id: customerId,
-          session_id: sessionId,
-        },
+        data: { customer_id: customerId, session_id: sessionId },
       });
+      if (result.count === 0) {
+        console.warn(`Guest cart item ${item.cart_id} already merged/removed, skipping`);
+      }
     }
   }
 };

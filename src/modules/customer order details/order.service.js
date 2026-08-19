@@ -216,7 +216,7 @@ export const CustomerOrderDetailsByOrderIdServices = async (orderid) => {
         totals: order.oc_order_total,
 
 
-        order_history: order.oc_order_history.filter((o)=> o?.notify === true || o?.notify === "true").map(h => ({
+        order_history: order.oc_order_history.filter((o)=> o?.notify !== true || o?.notify !== "true").map(h => ({
             status: statusMap[h.order_status_id] || 'Unknown',
             comment: h.comment,
             date_added: h.date_added,
