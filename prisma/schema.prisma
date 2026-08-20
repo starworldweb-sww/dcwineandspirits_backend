@@ -742,7 +742,7 @@ model oc_customer_wishlist {
   customer_id Int
   product_id  Int
   date_added  DateTime    @db.DateTime(0)
-  oc_product   oc_product? @relation(fields: [product_id], references: [product_id])
+  oc_product  oc_product? @relation(fields: [product_id], references: [product_id])
 
   @@id([customer_id, product_id])
 }
@@ -1108,6 +1108,9 @@ model oc_journal3_blog_post {
   date_updated DateTime? @db.DateTime(0)
   views        Int?
 
+  oc_journal3_blog_post_description oc_journal3_blog_post_description[]
+  oc_user                           oc_user?                            @relation(fields: [author_id], references: [user_id])
+
   @@index([author_id], map: "author_id")
 }
 
@@ -1121,6 +1124,8 @@ model oc_journal3_blog_post_description {
   meta_description String? @db.MediumText
   keyword          String? @db.VarChar(256)
   tags             String? @db.VarChar(256)
+
+  oc_Journal3BlogPost oc_journal3_blog_post @relation(fields: [post_id], references: [post_id])
 
   @@id([post_id, language_id])
   @@index([language_id, post_id], map: "idx_language_post")
@@ -1503,7 +1508,7 @@ model oc_order {
   oc_order_history  oc_order_history[]
   oc_order_tracking oc_order_tracking[]
   oc_order_product  oc_order_product[]
-  oc_order_total     oc_order_total[]
+  oc_order_total    oc_order_total[]
 
   @@index([affiliate_id], map: "affiliate_id")
   @@index([currency_id], map: "currency_id")
@@ -2214,19 +2219,20 @@ model oc_upload {
 }
 
 model oc_user {
-  user_id       Int      @id @default(autoincrement())
-  user_group_id Int
-  username      String   @db.VarChar(20)
-  password      String   @db.VarChar(40)
-  salt          String   @db.VarChar(9)
-  firstname     String   @db.VarChar(32)
-  lastname      String   @db.VarChar(32)
-  email         String   @db.VarChar(96)
-  image         String   @db.VarChar(255)
-  code          String   @db.VarChar(40)
-  ip            String   @db.VarChar(40)
-  status        Boolean
-  date_added    DateTime @db.DateTime(0)
+  user_id             Int                     @id @default(autoincrement())
+  user_group_id       Int
+  username            String                  @db.VarChar(20)
+  password            String                  @db.VarChar(40)
+  salt                String                  @db.VarChar(9)
+  firstname           String                  @db.VarChar(32)
+  lastname            String                  @db.VarChar(32)
+  email               String                  @db.VarChar(96)
+  image               String                  @db.VarChar(255)
+  code                String                  @db.VarChar(40)
+  ip                  String                  @db.VarChar(40)
+  status              Boolean
+  date_added          DateTime                @db.DateTime(0)
+  blog_posts oc_journal3_blog_post[]
 
   @@index([user_group_id], map: "user_group_id")
 }

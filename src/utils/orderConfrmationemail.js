@@ -63,7 +63,7 @@ export const generateOrderConfirmationEmail = ({
           : (opt.option_name || opt.name || 'Option');
 
       return `
-    <div style="margin-top:4px;padding:3px 10px;background:#f5f5f5;border-left:2px solid #333;font-size:11px;color:#555;line-height:1.5;">
+    <div style="margin-top:4px;padding:3px 10px;background:#f5f5f5;border-left:2px solid #8a1932;font-size:11px;color:#555;line-height:1.5;">
       <strong style="text-transform:uppercase;font-size:10px;letter-spacing:0.5px;color:#222;">
         ${optionName}:
       </strong>&nbsp;
@@ -84,7 +84,7 @@ export const generateOrderConfirmationEmail = ({
       </td>
       <td style="padding:16px 18px;border-bottom:1px solid #e8e8e8;text-align:center;vertical-align:top;font-family:'Georgia',serif;font-size:14px;color:#333;white-space:nowrap;">${p.quantity}</td>
       <td style="padding:16px 18px;border-bottom:1px solid #e8e8e8;text-align:right;vertical-align:top;font-family:'Georgia',serif;font-size:14px;color:#333;white-space:nowrap;">${fmt(unitPrice)}</td>
-      <td style="padding:16px 10px;border-bottom:1px solid #e8e8e8;text-align:right;vertical-align:top;font-family:'Georgia',serif;font-size:14px;font-weight:700;color:#000;white-space:nowrap;">${fmt(itemTotal)}</td>
+      <td style="padding:16px 10px;border-bottom:1px solid #e8e8e8;text-align:right;vertical-align:top;font-family:'Georgia',serif;font-size:14px;font-weight:700;color:#8a1932;white-space:nowrap;">${fmt(itemTotal)}</td>
     </tr>`;
   }).join("");
 
@@ -95,7 +95,7 @@ export const generateOrderConfirmationEmail = ({
     <td style="padding:0 28px 24px;background:#fff;">
       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd;border-radius:4px;overflow:hidden;">
         <tr>
-          <td style="background:#111;padding:12px 18px;border-bottom:1px solid #333;">
+          <td style="background:#8a1932;padding:12px 18px;border-bottom:1px solid #6d1427;">
             <span style="font-family:Arial,sans-serif;font-size:9px;letter-spacing:2.5px;color:#fff;text-transform:uppercase;font-weight:700;">Order Note / Gift Message</span>
           </td>
         </tr>
@@ -114,7 +114,7 @@ export const generateOrderConfirmationEmail = ({
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Order Confirmed — Wine &amp; Champagne Gifts</title>
+  <title>Order Confirmed — DC Wine &amp; Spirits</title>
   <style>
     body, .bg { background-color:#f0f0f0 !important; }
     u + .bg   { background-color:#f0f0f0 !important; }
@@ -137,37 +137,37 @@ export const generateOrderConfirmationEmail = ({
 
         <!-- ════ TOP STRIPE ════ -->
         <tr>
-          <td style="background:#000;height:5px;padding:0;font-size:0;line-height:0;">
-            <div style="height:5px;background:repeating-linear-gradient(90deg,#fff 0px,#fff 8px,#000 8px,#000 16px);"></div>
+          <td style="background:#8a1932;height:5px;padding:0;font-size:0;line-height:0;">
+            <div style="height:5px;background:repeating-linear-gradient(90deg,#fff 0px,#fff 8px,#8a1932 8px,#8a1932 16px);"></div>
           </td>
         </tr>
 
         <!-- ════ HEADER ════ -->
         <tr>
-          <td style="background:#000;padding:44px 40px 36px;text-align:center;">
+          <td style="background:#ffffff;padding:44px 40px 36px;text-align:center;border-bottom:1px solid #eee;">
 
             <!-- Logo -->
             <img
-              src="https://www.wineandchampagnegifts.com/favicon.ico?favicon.0dhuqp~co~01-.ico"
-              alt="Wine &amp; Champagne Gifts"
-              width="160"
-              style="display:block;margin:0 auto 28px;max-width:200px;height:auto;border:0;filter:brightness(0) invert(1);"
+              src="https://www.dcwineandspirits.com/image/cache/catalog/logo/dc-wine_logo-360x90.png"
+              alt="DC Wine &amp; Spirits"
+              width="180"
+              style="display:block;margin:0 auto 28px;max-width:220px;height:auto;border:0;"
             />
 
-            <!-- Thin white rule -->
-            <div style="width:60px;height:1px;background:#fff;margin:0 auto 24px;"></div>
+            <!-- Thin maroon rule -->
+            <div style="width:60px;height:1px;background:#8a1932;margin:0 auto 24px;"></div>
 
             <!-- Badge -->
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 22px;">
               <tr>
-                <td style="border:1px solid #fff;border-radius:2px;padding:8px 24px;">
-                  <span style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#fff;text-transform:uppercase;">Order Confirmed</span>
+                <td style="border:1px solid #8a1932;border-radius:2px;padding:8px 24px;">
+                  <span style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#8a1932;text-transform:uppercase;">Order Confirmed</span>
                 </td>
               </tr>
             </table>
 
-            <p style="margin:0;font-family:'Georgia',serif;font-size:16px;color:#ccc;line-height:1.7;">
-              Thank you, <strong style="color:#fff;">${firstname} ${lastname}</strong>.<br/>
+            <p style="margin:0;font-family:'Georgia',serif;font-size:16px;color:#444;line-height:1.7;">
+              Thank you, <strong style="color:#111;">${firstname} ${lastname}</strong>.<br/>
               Your order has been received and is being processed.
             </p>
           </td>
@@ -175,20 +175,20 @@ export const generateOrderConfirmationEmail = ({
 
         <!-- ════ ORDER META BAR ════ -->
         <tr>
-          <td style="background:#111;padding:0;">
+          <td style="background:#8a1932;padding:0;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="padding:20px;border-right:1px solid #2a2a2a;text-align:center;width:33.3%;">
-                  <span style="display:block;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#888;text-transform:uppercase;margin-bottom:8px;">Order No.</span>
+                <td style="padding:20px;border-right:1px solid #a53a52;text-align:center;width:33.3%;">
+                  <span style="display:block;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#e8c3cd;text-transform:uppercase;margin-bottom:8px;">Order No.</span>
                   <span style="font-family:'Georgia',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:1px;">#${order_id}</span>
                 </td>
-                <td style="padding:20px;border-right:1px solid #2a2a2a;text-align:center;width:33.3%;">
-                  <span style="display:block;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#888;text-transform:uppercase;margin-bottom:8px;">Date</span>
-                  <span style="font-family:'Georgia',serif;font-size:13px;color:#ddd;">${orderDate}</span>
+                <td style="padding:20px;border-right:1px solid #a53a52;text-align:center;width:33.3%;">
+                  <span style="display:block;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#e8c3cd;text-transform:uppercase;margin-bottom:8px;">Date</span>
+                  <span style="font-family:'Georgia',serif;font-size:13px;color:#f5dde3;">${orderDate}</span>
                 </td>
                 <td style="padding:20px;text-align:center;width:33.3%;">
-                  <span style="display:block;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#888;text-transform:uppercase;margin-bottom:8px;">Status</span>
-                  <span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:#fff;background:#333;padding:4px 12px;border-radius:2px;">Processed</span>
+                  <span style="display:block;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#e8c3cd;text-transform:uppercase;margin-bottom:8px;">Status</span>
+                  <span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:#fff;background:#6d1427;padding:4px 12px;border-radius:2px;">Processed</span>
                 </td>
               </tr>
             </table>
@@ -207,10 +207,10 @@ export const generateOrderConfirmationEmail = ({
                   <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
                     <tr>
                       <td style="padding-right:10px;vertical-align:middle;">
-                        <div style="width:16px;height:2px;background:#000;"></div>
+                        <div style="width:16px;height:2px;background:#8a1932;"></div>
                       </td>
                       <td>
-                        <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#000;text-transform:uppercase;font-weight:700;">Customer Information</span>
+                        <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#8a1932;text-transform:uppercase;font-weight:700;">Customer Information</span>
                       </td>
                     </tr>
                   </table>
@@ -243,10 +243,10 @@ export const generateOrderConfirmationEmail = ({
                         <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
                           <tr>
                             <td style="padding-right:8px;vertical-align:middle;">
-                              <div style="width:16px;height:2px;background:#000;"></div>
+                              <div style="width:16px;height:2px;background:#8a1932;"></div>
                             </td>
                             <td>
-                              <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#000;text-transform:uppercase;font-weight:700;">Payment</span>
+                              <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#8a1932;text-transform:uppercase;font-weight:700;">Payment</span>
                             </td>
                           </tr>
                         </table>
@@ -273,10 +273,10 @@ export const generateOrderConfirmationEmail = ({
                         <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
                           <tr>
                             <td style="padding-right:8px;vertical-align:middle;">
-                              <div style="width:16px;height:2px;background:#000;"></div>
+                              <div style="width:16px;height:2px;background:#8a1932;"></div>
                             </td>
                             <td>
-                              <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#000;text-transform:uppercase;font-weight:700;">Shipping</span>
+                              <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#8a1932;text-transform:uppercase;font-weight:700;">Shipping</span>
                             </td>
                           </tr>
                         </table>
@@ -310,10 +310,10 @@ export const generateOrderConfirmationEmail = ({
                   <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
                     <tr>
                       <td style="padding-right:10px;vertical-align:middle;">
-                        <div style="width:16px;height:2px;background:#000;"></div>
+                        <div style="width:16px;height:2px;background:#8a1932;"></div>
                       </td>
                       <td>
-                        <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#000;text-transform:uppercase;font-weight:700;">Order Items</span>
+                        <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#8a1932;text-transform:uppercase;font-weight:700;">Order Items</span>
                       </td>
                     </tr>
                   </table>
@@ -328,10 +328,10 @@ export const generateOrderConfirmationEmail = ({
                       <col style="width:74px;"/>
                     </colgroup>
                     <thead>
-                      <tr style="background:#111;">
-                        <th style="padding:12px 16px;text-align:left;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#fff;text-transform:uppercase;font-weight:700;border-right:1px solid #333;">Product</th>
-                        <th style="padding:12px 10px;text-align:center;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#fff;text-transform:uppercase;font-weight:700;border-right:1px solid #333;">Qty</th>
-                        <th style="padding:12px 10px;text-align:right;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#fff;text-transform:uppercase;font-weight:700;border-right:1px solid #333;">Unit</th>
+                      <tr style="background:#8a1932;">
+                        <th style="padding:12px 16px;text-align:left;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#fff;text-transform:uppercase;font-weight:700;border-right:1px solid #a53a52;">Product</th>
+                        <th style="padding:12px 10px;text-align:center;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#fff;text-transform:uppercase;font-weight:700;border-right:1px solid #a53a52;">Qty</th>
+                        <th style="padding:12px 10px;text-align:right;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#fff;text-transform:uppercase;font-weight:700;border-right:1px solid #a53a52;">Unit</th>
                         <th style="padding:12px 16px 12px 10px;text-align:right;font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;color:#fff;text-transform:uppercase;font-weight:700;">Total</th>
                       </tr>
                     </thead>
@@ -347,11 +347,11 @@ export const generateOrderConfirmationEmail = ({
   ${totalRows}
 
   <!-- Grand Total -->
-  <tr style="background:#000;">
-    <td colspan="3" style="padding:18px 20px;text-align:right;font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#fff;text-transform:uppercase;border-top:2px solid #000;">
+  <tr style="background:#8a1932;">
+    <td colspan="3" style="padding:18px 20px;text-align:right;font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#fff;text-transform:uppercase;border-top:2px solid #6d1427;">
      ${grandTotalItem?.title || "Grand Total"}
     </td>
-    <td style="padding:18px 20px;text-align:right;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#fff;border-top:2px solid #000;">
+    <td style="padding:18px 20px;text-align:right;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#fff;border-top:2px solid #6d1427;">
       ${fmt(grandTotalItem?.value ?? 0)}
     </td>
   </tr>
@@ -369,45 +369,48 @@ export const generateOrderConfirmationEmail = ({
 
         <!-- ════ FOOTER ════ -->
         <tr>
-          <td style="background:#111;padding:0;">
+          <td style="background:#1a1a1a;padding:0;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="padding:36px 40px;text-align:center;">
 
-                  <img src="https://www.wineandchampagnegifts.com/favicon.ico?favicon.0dhuqp~co~01-.ico"
-                    alt="Wine &amp; Champagne Gifts"
-                    width="130"
-                    style="display:block;margin:0 auto 20px;max-width:160px;height:auto;border:0;filter:brightness(0) invert(1);opacity:0.9;"
+                  <img src="https://www.dcwineandspirits.com/image/cache/catalog/logo/dc-wine_logo-360x90.png"
+                    alt="DC Wine &amp; Spirits"
+                    width="150"
+                    style="display:block;margin:0 auto 20px;max-width:180px;height:auto;border:0;filter:brightness(0) invert(1);opacity:0.9;"
                   />
 
-                  <div style="width:40px;height:1px;background:#444;margin:0 auto 20px;"></div>
+                  <div style="width:40px;height:1px;background:#8a1932;margin:0 auto 20px;"></div>
 
                   <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;">
                     Questions about your order?
                   </p>
-                  <p style="margin:0 0 16px;font-family:'Georgia',serif;font-size:13px;color:#aaa;">
-                    <a href="mailto:contact@wineandchampagnegifts.com"
+                  <p style="margin:0 0 4px;font-family:'Georgia',serif;font-size:13px;color:#aaa;">
+                    <a href="mailto:contact@dcwineandspirits.com"
                       style="color:#fff;text-decoration:none;border-bottom:1px solid #555;">
-                      contact@wineandchampagnegifts.com
+                      contact@dcwineandspirits.com
                     </a>
                   </p>
+                  <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:12px;color:#aaa;">
+                    (202) 459-8489
+                  </p>
                   <p style="margin:0 0 20px;">
-                    <a href="https://www.wineandchampagnegifts.com"
+                    <a href="https://www.dcwineandspirits.com"
                       style="font-family:Arial,sans-serif;font-size:10px;color:#888;text-decoration:none;letter-spacing:2px;text-transform:uppercase;">
-                      www.wineandchampagnegifts.com
+                      www.dcwineandspirits.com
                     </a>
                   </p>
 
                   <div style="width:40px;height:1px;background:#333;margin:0 auto 20px;"></div>
 
                   <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;color:#555;letter-spacing:1px;">
-                    &copy; ${new Date().getFullYear()} Wine &amp; Champagne Gifts. All rights reserved.
+                    &copy; ${new Date().getFullYear()} DC Wine &amp; Spirits. All rights reserved.
                   </p>
                 </td>
               </tr>
             </table>
             <!-- Bottom stripe -->
-            <div style="height:5px;background:repeating-linear-gradient(90deg,#fff 0px,#fff 8px,#111 8px,#111 16px);"></div>
+            <div style="height:5px;background:repeating-linear-gradient(90deg,#fff 0px,#fff 8px,#8a1932 8px,#8a1932 16px);"></div>
           </td>
         </tr>
 
