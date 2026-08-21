@@ -6,6 +6,9 @@ import { fetchSeoMap, getEffectivePrice, getValidSpecialPrice } from "../../util
 const LANGUAGE_ID = 1;
 const STORE_ID = 0;
 const CUSTOMER_GROUP_ID = 1;
+const DEFAULT_LIMIT = 24;
+const MAX_LIMIT = 100;
+
 
 
 const buildBreadcrumbs = async (categoryId) => {
@@ -415,11 +418,11 @@ const filterProducts = (items, filters) => {
     }
 
     if (minPrice != null) {
-        filtered = filtered.filter((p) => getEffectivePrice(p) >= minPrice);
+        filtered = filtered.filter((p) => getEffectivePrice(p.price, p.special_price) >= minPrice);
     }
 
     if (maxPrice != null) {
-        filtered = filtered.filter((p) => getEffectivePrice(p) <= maxPrice);
+        filtered = filtered.filter((p) => getEffectivePrice(p.price, p.special_price) <= maxPrice);
     }
 
     if (inStock === true) {
@@ -721,7 +724,13 @@ const getProductsSummary = async (productIds) => {
     return data;
 };
 
-const getCategoryData = async (categoryId) => {
+const getCategoryData = async (categoryId, query) => {
+
+    const page = parsePositiveInt(query.page, 1);
+    const limit = Math.min(parsePositiveInt(query.limit, DEFAULT_LIMIT), MAX_LIMIT);
+    const sort = query.sort || "default";
+    const filters = parseCategoryFilters(query);
+
     const [category, categoryDesc, subCategories, productLinks, breadcrumbs] = await Promise.all([
         prisma.oc_category.findUnique({ where: { category_id: categoryId } }),
         prisma.oc_category_description.findFirst({
@@ -739,39 +748,84 @@ const getCategoryData = async (categoryId) => {
         buildBreadcrumbs(categoryId),
     ]);
 
-    // subcategory names fetch karo
     const subCategoryIds = subCategories.map((s) => s.category_id);
-    const subCategoryDescs = subCategoryIds.length
-        ? await prisma.oc_category_description.findMany({
-            where: { category_id: { in: subCategoryIds }, language_id: LANGUAGE_ID },
-            orderBy: { name: "asc" },
-            select: { category_id: true, name: true },
-        })
-        : [];
+
+    const [subCategoryDescs, subCategorySeoMap] = await Promise.all([
+        subCategoryIds.length
+            ? prisma.oc_category_description.findMany({
+                where: { category_id: { in: subCategoryIds }, language_id: LANGUAGE_ID },
+                orderBy: { name: "asc" },
+                select: { category_id: true, name: true },
+            })
+            : Promise.resolve([]),
+        subCategoryIds.length
+            ? fetchSeoMap(subCategoryIds.map((id) => `category_id=${id}`))
+            : Promise.resolve(new Map()),
+    ]);
+
     const subCategoryDescMap = new Map(subCategoryDescs.map((d) => [d.category_id, d.name]));
 
     const subCategoriesData = subCategories.map((s) => ({
         category_id: s.category_id,
         name: subCategoryDescMap.get(s.category_id) ?? null,
         image: s.image,
+        seo_url: subCategorySeoMap.get(`category_id=${s.category_id}`) ?? null,
     }));
 
     // products of this category
     const productIds = productLinks.map((p) => p.product_id);
     const products = await getProductsSummary(productIds);
 
-    // in products ke unique brands
+    // only fetch the maps we actually need for the filters that were passed
+    const [categoryMap, productFilterMap, productOptionMap] = await Promise.all([
+        filters.subcategoryIds.length > 0 ? getProductCategoryMap(productIds) : Promise.resolve(new Map()),
+        filters.filterIds.length > 0 ? getProductFilterMap(productIds) : Promise.resolve(new Map()),
+        filters.optionIds.length > 0 ? getProductOptionMap(productIds) : Promise.resolve(new Map()),
+    ]);
+
+    // normalize so filterProducts (which expects id / manufacturer_id / category_ids) can work
+    const normalizedProducts = products.map((p) => ({
+        ...p,
+        id: p.product_id,
+        manufacturer_id: p.manufacturer?.manufacturer_id ?? null,
+        category_ids: categoryMap.get(p.product_id) ?? [],
+    }));
+
+    const filtered = filterProducts(normalizedProducts, {
+        ...filters,
+        productFilterMap,
+        productOptionMap,
+    });
+
+    // apply sort (previously ignored)
+    let sortedProducts = filtered;
+    if (sort === "price_asc") {
+        sortedProducts = [...filtered].sort((a, b) => Number(a.final_price) - Number(b.final_price));
+    } else if (sort === "price_desc") {
+        sortedProducts = [...filtered].sort((a, b) => Number(b.final_price) - Number(a.final_price));
+    } else if (sort === "name_asc") {
+        sortedProducts = [...filtered].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    }
+    // "default" keeps the price-ascending order getProductsSummary already applies
+
+    // drop helper-only fields before sending to the client
+    const cleanedProducts = sortedProducts.map(({ id, category_ids, ...rest }) => rest);
+
+    // paginate AFTER filtering (previously not applied at all)
+    const paginatedProducts = paginateItems(cleanedProducts, page, limit);
+
+    // brand list should reflect the filtered set the user is looking at
     const brandMap = new Map();
-    products.forEach((p) => {
+    cleanedProducts.forEach((p) => {
         if (p.manufacturer && !brandMap.has(p.manufacturer.manufacturer_id)) {
             brandMap.set(p.manufacturer.manufacturer_id, p.manufacturer);
         }
     });
 
-    // price range (jaise screenshot me $79 - $3399 dikh raha hai)
-    const prices = products.map((p) => Number(p.final_price));
-    const priceRange = prices.length
-        ? { min: Math.min(...prices), max: Math.max(...prices) }
+    // price range reflects the whole category (unfiltered), so the slider bounds don't shrink as filters are applied
+    const allPrices = products.map((p) => Number(p.final_price));
+    const priceRange = allPrices.length
+        ? { min: Math.min(...allPrices), max: Math.max(...allPrices) }
         : { min: 0, max: 0 };
 
     return {
@@ -786,12 +840,17 @@ const getCategoryData = async (categoryId) => {
         subCategories: subCategoriesData,
         brands: [...brandMap.values()],
         priceRange,
-        products,
-        breadcrumbs
+        products: paginatedProducts,
+        breadcrumbs,
     };
 };
 
-const getManufacturerData = async (manufacturerId) => {
+const getManufacturerData = async (manufacturerId, query = {}) => {
+    const page = parsePositiveInt(query.page, 1);
+    const limit = Math.min(parsePositiveInt(query.limit, DEFAULT_LIMIT), MAX_LIMIT);
+    const sort = query.sort || "default";
+    const filters = parseCategoryFilters(query);
+
     const [manufacturer, manufacturerDesc, productRows] = await Promise.all([
         prisma.oc_manufacturer.findUnique({ where: { manufacturer_id: manufacturerId } }),
         prisma.oc_manufacturer_description.findFirst({
@@ -806,9 +865,54 @@ const getManufacturerData = async (manufacturerId) => {
     const productIds = productRows.map((p) => p.product_id);
     const products = await getProductsSummary(productIds);
 
-    const prices = products.map((p) => Number(p.final_price));
-    const priceRange = prices.length
-        ? { min: Math.min(...prices), max: Math.max(...prices) }
+    // only fetch the maps we actually need for the filters that were passed
+    const [categoryMap, productFilterMap, productOptionMap] = await Promise.all([
+        filters.subcategoryIds.length > 0 ? getProductCategoryMap(productIds) : Promise.resolve(new Map()),
+        filters.filterIds.length > 0 ? getProductFilterMap(productIds) : Promise.resolve(new Map()),
+        filters.optionIds.length > 0 ? getProductOptionMap(productIds) : Promise.resolve(new Map()),
+    ]);
+
+    // normalize so filterProducts (which expects id / manufacturer_id / category_ids) can work.
+    // manufacturer_id filtering itself is a no-op here (every product already
+    // belongs to this one brand), but subcategory/filter/option/price/stock
+    // filters all still apply
+    const normalizedProducts = products.map((p) => ({
+        ...p,
+        id: p.product_id,
+        manufacturer_id: p.manufacturer?.manufacturer_id ?? null,
+        category_ids: categoryMap.get(p.product_id) ?? [],
+    }));
+
+    const filtered = filterProducts(normalizedProducts, {
+        ...filters,
+        productFilterMap,
+        productOptionMap,
+    });
+
+    // apply sort
+    let sortedProducts = filtered;
+    if (sort === "price_asc") {
+        sortedProducts = [...filtered].sort((a, b) => Number(a.final_price) - Number(b.final_price));
+    } else if (sort === "price_desc") {
+        sortedProducts = [...filtered].sort((a, b) => Number(b.final_price) - Number(a.final_price));
+    } else if (sort === "name_asc") {
+        sortedProducts = [...filtered].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    }
+    // "default" keeps the price-ascending order getProductsSummary already applies
+
+    // drop helper-only fields before sending to the client
+    const cleanedProducts = sortedProducts.map(({ id, category_ids, ...rest }) => rest);
+
+    // paginate AFTER filtering — this is what makes hasNextPage / infinite
+    // scroll actually work on brand pages, which it currently doesn't
+    const paginatedProducts = paginateItems(cleanedProducts, page, limit);
+
+    // price range reflects the whole brand catalog (unfiltered), so the
+    // slider bounds don't shrink as filters are applied — same choice made
+    // in getCategoryData
+    const allPrices = products.map((p) => Number(p.final_price));
+    const priceRange = allPrices.length
+        ? { min: Math.min(...allPrices), max: Math.max(...allPrices) }
         : { min: 0, max: 0 };
 
     return {
@@ -820,11 +924,11 @@ const getManufacturerData = async (manufacturerId) => {
         meta_title: manufacturerDesc?.meta_title ?? null,
         meta_h1: manufacturerDesc?.meta_h1 ?? null,
         priceRange,
-        products,
+        products: paginatedProducts,
     };
 };
 
-export const getProductBySlugOrIdService = async (slugOrId) => {
+export const getProductBySlugOrIdService = async (slugOrId, query = {}) => {
     const resolved = await resolveSlugOrId(slugOrId);
 
     if (!resolved) {
@@ -832,11 +936,11 @@ export const getProductBySlugOrIdService = async (slugOrId) => {
     }
 
     if (resolved.type === "category") {
-        return await getCategoryData(resolved.id);
+        return await getCategoryData(resolved.id, query);
     }
 
     if (resolved.type === "manufacturer") {
-        return await getManufacturerData(resolved.id);
+        return await getManufacturerData(resolved.id, query);
     }
 
     // if (resolved.type === "product") {

@@ -11,7 +11,7 @@ export const getAllProducts = async (req, res) => {
 
 
 export const getProductBySlugOrId = async (req, res) => {
-    const result = await getProductBySlugOrIdService(req.params.slug);
+    const result = await getProductBySlugOrIdService(req.params.slug,req.query);
     return successResponse(res, 200, "Products fetch scuessfully !", result)
 
 }
