@@ -1,5 +1,5 @@
 import { successResponse } from "../../../utils/apiResponse.js";
-import { giftbyOccasionService, giftdropDown_Shop_by_CategoryService, giftdropDownGifts_By_OriginService, giftdropDownService, giftdropDownShopByPriceService, headerTopCategoryService, homePageProductsService, homePageTextService, homeTopBannerService, loveBannersService, OccasionsMenuService, occasionTreasuresService, personalizationService, shopByBrandeService, shopByBrandTitleService, topcategoriesService, wineGiftService } from "./header_category.service.js";
+import { giftbyOccasionService, giftdropDown_Shop_by_CategoryService, giftdropDownGifts_By_OriginService, giftdropDownService, giftdropDownShopByPriceService, headerTopCategoryService, homePageAllDataService, homePageProductsService, homePageTextService, homeTopBannerService, loveBannersService, OccasionsMenuService, occasionTreasuresService, personalizationService, shopByBrandeService, shopByBrandTitleService, topcategoriesService, wineGiftService } from "./header_category.service.js";
 
 
 
@@ -71,4 +71,9 @@ export const shopByBrandTitleController = async (req,res) => {
 export const homePageTextController = async (req,res) => {
     const result = await homePageTextService();
     return successResponse(res, 200, "data fetched sucessful !", result);
+}
+
+export const homePageAllDataController = async (req, res) => {
+    const result = await homePageAllDataService();
+    return successResponse(res, 200, "data fetched successful !", result)
 }

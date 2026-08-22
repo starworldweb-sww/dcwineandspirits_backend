@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { giftbyOccasionController, giftdropDown_Shop_by_CategoryController, giftDropDownCategoryGiftByOriginController, giftDropDownController, giftDropDownShopByPriceController, headerTopCategoryController, homePageProductsController, homePageTextController, homeTopBannerController, loveBannersController, OccasionsMenuController, occasionTreasuresController, personalizationController, shopByBrandController, shopByBrandTitleController, TopCategoriesController, wineGiftsController } from "./header_category.controller.js";
+import { giftbyOccasionController, giftdropDown_Shop_by_CategoryController, giftDropDownCategoryGiftByOriginController, giftDropDownController, giftDropDownShopByPriceController, headerTopCategoryController, homePageAllDataController, homePageProductsController, homePageTextController, homeTopBannerController, loveBannersController, OccasionsMenuController, occasionTreasuresController, personalizationController, shopByBrandController, shopByBrandTitleController, TopCategoriesController, wineGiftsController } from "./header_category.controller.js";
 import { asyncHandler } from "../../../utils/asyncHandler.js";
 
 
@@ -23,5 +23,9 @@ header_category.get('/home-page-products',asyncHandler(homePageProductsControlle
 header_category.get('/shopByBrand-title',asyncHandler(shopByBrandTitleController))
 header_category.get('/home-page-text',asyncHandler(homePageTextController))
 
+
+// all home page api call
+
+header_category.get('/home-page-all-data', asyncHandler(homePageAllDataController))
 
 export default header_category;

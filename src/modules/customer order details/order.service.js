@@ -50,7 +50,6 @@ export const orderhistoryservice = async (data) => {
     const statusIds = customerOrderHistory
         .map(o => o.oc_order_history[0]?.order_status_id)
         .filter(Boolean);
-
     const statuses = await prisma.oc_order_status.findMany({
         where: { order_status_id: { in: statusIds }, language_id: 1 },
         select: { order_status_id: true, name: true }
@@ -58,7 +57,7 @@ export const orderhistoryservice = async (data) => {
 
     const statusMap = Object.fromEntries(statuses.map(s => [s.order_status_id, s.name]));
 
-    const COH = customerOrderHistory.map(order => ({
+    const COH = customerOrderHistory.filter((o)=>o?.oc_order_history?.length > 0).map(order => ({
         order_id: order.order_id,
         firstname: order.firstname,
         lastname: order.lastname,
@@ -68,7 +67,7 @@ export const orderhistoryservice = async (data) => {
         tracking: order.oc_order_tracking,
         total_products: order._count.oc_order_product
     }));
-
+ 
     return {
         page,
         limit,

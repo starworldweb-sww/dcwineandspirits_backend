@@ -759,3 +759,59 @@ export const homePageTextService = async () => {
         ],
     }
 }
+
+
+export const homePageAllDataService = async () => {
+    const keys = [
+        "topCategory",
+        "giftDropDown",
+        "shopByCategory",
+        "giftByOrigin",
+        "shopByPrice",
+        "shopByBrand",
+        "personalization",
+        "wineGift",
+        "occasionTreasures",
+        "occasionMenu",
+        "homeTopBanner",
+        "topCategories",
+        "loveBanners",
+        "giftByOccasion",
+        "homePageProducts",
+        "shopByBrandTitle",
+        "homePageText",
+    ]
+
+    const results = await Promise.allSettled([
+        headerTopCategoryService(),
+        giftdropDownService(),
+        giftdropDown_Shop_by_CategoryService(),
+        giftdropDownGifts_By_OriginService(),
+        giftdropDownShopByPriceService(),
+        shopByBrandeService(),
+        personalizationService(),
+        wineGiftService(),
+        occasionTreasuresService(),
+        OccasionsMenuService(),
+        homeTopBannerService(),
+        topcategoriesService(),
+        loveBannersService(),
+        giftbyOccasionService(),
+        homePageProductsService(),
+        shopByBrandTitleService(),
+        homePageTextService(),
+    ])
+
+    const data = {}
+    results.forEach((result, i) => {
+        const key = keys[i]
+        if (result.status === "fulfilled") {
+            data[key] = result.value
+        } else {
+            console.error(`homePageAllDataService: "${key}" failed ->`, result.reason)
+            data[key] = null 
+        }
+    })
+
+    return data
+}

@@ -1004,6 +1004,82 @@ const getRelatedProductsSummary = async (productIds) => {
     });
 };
 
+const getProductsSummaryOrdered = async (where, orderBy, limit) => {
+    const now = new Date();
+
+    const products = await prisma.oc_product.findMany({
+        where,
+        orderBy,
+        take: limit,
+        select: { product_id: true, image: true, price: true, quantity: true },
+    });
+
+    const productIds = products.map((p) => p.product_id);
+    if (!productIds.length) return [];
+
+    const [descriptions, seoUrls, specials] = await Promise.all([
+        prisma.oc_product_description.findMany({
+            where: { product_id: { in: productIds }, language_id: LANGUAGE_ID },
+            select: { product_id: true, name: true },
+        }),
+        prisma.oc_seo_url.findMany({
+            where: {
+                query: { in: productIds.map((id) => `product_id=${id}`) },
+                store_id: STORE_ID,
+                language_id: LANGUAGE_ID,
+            },
+            select: { query: true, keyword: true },
+        }),
+        prisma.oc_product_special.findMany({
+            where: { product_id: { in: productIds }, customer_group_id: CUSTOMER_GROUP_ID },
+        }),
+    ]);
+
+    const descMap = new Map(descriptions.map((d) => [d.product_id, d.name]));
+    const seoMap = new Map(seoUrls.map((s) => [s.query, s.keyword]));
+
+    const specialsMap = new Map();
+    for (const s of specials) {
+        if (!specialsMap.has(s.product_id)) specialsMap.set(s.product_id, []);
+        specialsMap.get(s.product_id).push(s);
+    }
+
+    // Prisma preserves the orderBy sequence even with `take`, so we keep the
+    // same order here instead of re-sorting.
+    return products.map((p) => {
+        const activeSpecial = (specialsMap.get(p.product_id) ?? [])
+            .filter((s) => isDateActive(s.date_start, s.date_end, now))
+            .sort((a, b) => a.priority - b.priority)[0];
+
+        return {
+            product_id: p.product_id,
+            name: descMap.get(p.product_id) ?? null,
+            image: p.image,
+            price: p.price,
+            special_price: activeSpecial?.price ?? null,
+            in_stock: p.quantity > 0,
+            seo_url: seoMap.get(`product_id=${p.product_id}`) ?? null,
+        };
+    });
+};
+
+// naye products, current product ko chhodkar
+const getLatestProductsSummary = (excludeProductId, limit = 10) =>
+    getProductsSummaryOrdered(
+        { status: true, product_id: { not: excludeProductId } },
+        { date_added: "desc" },
+        limit
+    );
+
+// sabse zyada viewed products ko bestseller proxy ki tarah use kar rahe hain
+// (jaise mostviewdproductservice me `viewed` field use hoti hai)
+const getBestsellerProductsSummary = (excludeProductId, limit = 10) =>
+    getProductsSummaryOrdered(
+        { status: true, product_id: { not: excludeProductId } },
+        { viewed: "desc" },
+        limit
+    );
+
 const getFullProductData = async (productId) => {
     const now = new Date();
 
@@ -1024,6 +1100,8 @@ const getFullProductData = async (productId) => {
         reviews,
         videos,
         downloadRows,
+        latestProducts,
+        bestsellerProducts,
     ] = await Promise.all([
         prisma.oc_product_description.findFirst({
             where: { product_id: productId, language_id: LANGUAGE_ID },
@@ -1067,6 +1145,8 @@ const getFullProductData = async (productId) => {
             where: { product_id: productId },
             select: { download_id: true },
         }),
+        getLatestProductsSummary(productId, 10),
+        getBestsellerProductsSummary(productId, 10),
     ]);
 
     // ---- Active special price nikalo ----
@@ -1209,6 +1289,8 @@ const getFullProductData = async (productId) => {
         options,
         attributes,
         related_products: relatedProducts,
+        latest_products: latestProducts,
+        bestseller_products: bestsellerProducts,
 
         reviews: reviews.map((r) => ({
             review_id: r.review_id,
@@ -1530,7 +1612,7 @@ export const mostviewdproductservice = async () => {
     const result = await prisma.oc_product.findMany({
         where: { status: true },
         orderBy: { viewed: "desc" },
-        take: 4,
+        take: 10,
         select: {
             product_id: true,
             model: true,

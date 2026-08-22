@@ -14,7 +14,7 @@ const wishlistRouter = Router();
 
 wishlistRouter.get('/', optionalAuth, asyncHandler(getWishlist));
 wishlistRouter.post('/add', optionalAuth, asyncHandler(addToWishlist));
-wishlistRouter.delete('/delete/:product_id', authMiddleware, asyncHandler(removeFromWishlist));
-wishlistRouter.get('/check/:product_id', authMiddleware, asyncHandler(checkWishlist));
+wishlistRouter.delete('/delete/:product_id', optionalAuth, asyncHandler(removeFromWishlist));
+wishlistRouter.get('/check/:product_id', optionalAuth, asyncHandler(checkWishlist));
 
 export default wishlistRouter;
