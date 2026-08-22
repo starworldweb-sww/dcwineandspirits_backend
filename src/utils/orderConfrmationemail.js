@@ -24,6 +24,7 @@ export const generateOrderConfirmationEmail = ({
   payment_country,
   totals = [],
   comment = "",
+  shipping_custom_field
 }) => {
 
 
@@ -45,6 +46,17 @@ export const generateOrderConfirmationEmail = ({
 
   const grandTotalItem = totals.find(t => t.code === "total");
 
+  const extractPhoneFromCustomField = (cf) => {
+    if (!cf) return "";
+    let parsed = cf;
+    if (typeof cf === "string") {
+      try { parsed = JSON.parse(cf); } catch (_) { parsed = {}; }
+    }
+    if (!parsed || typeof parsed !== "object") return "";
+    return String(parsed["1"] || parsed[1] || "").trim();
+  };
+
+  const shippingPhone = extractPhoneFromCustomField(shipping_custom_field);
 
   const orderDate = new Date(date_added).toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric",
@@ -287,6 +299,7 @@ export const generateOrderConfirmationEmail = ({
   <p style="margin:0 0 2px;font-family:Arial,sans-serif;font-size:12px;color:#666;line-height:1.7;">${shipping_address_1}${shipping_address_2 ? ", " + shipping_address_2 : ""}</p>
   <p style="margin:0 0 2px;font-family:Arial,sans-serif;font-size:12px;color:#666;">${shipping_city}, ${shipping_zone} ${shipping_postcode}</p>
   <p style="margin:0 0 2px;font-family:Arial,sans-serif;font-size:12px;color:#666;">${shipping_country}</p>
+  ${shippingPhone ? `<p style="margin:0 0 2px;font-family:Arial,sans-serif;font-size:12px;color:#666;">📞 ${shippingPhone}</p>` : ""}
   <div style="height:1px;background:#e8e8e8;margin-bottom:10px;"></div>
                               <span style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:2px;color:#888;text-transform:uppercase;display:block;margin-bottom:4px;">Method</span>
                               <span style="font-family:'Georgia',serif;font-size:13px;color:#111;font-weight:600;">${shipping_method}</span>
@@ -362,14 +375,14 @@ export const generateOrderConfirmationEmail = ({
             </table>
 
             ${commentBlock}
-            <div style="height:32px;"></div>
+           
 
           </td>
         </tr>
 
         <!-- ════ FOOTER ════ -->
         <tr>
-          <td style="background:#1a1a1a;padding:0;">
+          <td style="background:#ffffff;padding:0;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="padding:36px 40px;text-align:center;">
@@ -382,28 +395,28 @@ export const generateOrderConfirmationEmail = ({
 
                   <div style="width:40px;height:1px;background:#8a1932;margin:0 auto 20px;"></div>
 
-                  <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:#888;text-transform:uppercase;">
+                  <p style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;color:#1f1f1f;text-transform:uppercase;">
                     Questions about your order?
                   </p>
                   <p style="margin:0 0 4px;font-family:'Georgia',serif;font-size:13px;color:#aaa;">
                     <a href="mailto:contact@dcwineandspirits.com"
-                      style="color:#fff;text-decoration:none;border-bottom:1px solid #555;">
+                      style="color:#fff;text-decoration:none;border-bottom:1px solid #1f1f1f;">
                       contact@dcwineandspirits.com
                     </a>
                   </p>
-                  <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:12px;color:#aaa;">
+                  <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:12px;color:#1f1f1f;">
                     (202) 459-8489
                   </p>
                   <p style="margin:0 0 20px;">
                     <a href="https://www.dcwineandspirits.com"
-                      style="font-family:Arial,sans-serif;font-size:10px;color:#888;text-decoration:none;letter-spacing:2px;text-transform:uppercase;">
+                      style="font-family:Arial,sans-serif;font-size:10px;color:#1f1f1f;text-decoration:none;letter-spacing:2px;text-transform:uppercase;">
                       www.dcwineandspirits.com
                     </a>
                   </p>
 
                   <div style="width:40px;height:1px;background:#333;margin:0 auto 20px;"></div>
 
-                  <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;color:#555;letter-spacing:1px;">
+                  <p style="margin:0;font-family:Arial,sans-serif;font-size:10px;color:#1f1f1f;letter-spacing:1px;">
                     &copy; ${new Date().getFullYear()} DC Wine &amp; Spirits. All rights reserved.
                   </p>
                 </td>

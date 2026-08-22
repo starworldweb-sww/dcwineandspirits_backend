@@ -316,7 +316,8 @@ export const handleWebhook = async (req, res) => {
                         payment_city: order.payment_city,
                         payment_zone: order.payment_zone,
                         payment_country: order.payment_country,
-                        comment: order.comment
+                        comment: order.comment,
+                        shipping_custom_field: order.shipping_custom_field ?? null
                     });
 
                     // if (order.customer_id > 0) {

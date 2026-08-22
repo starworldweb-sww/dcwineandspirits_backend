@@ -665,6 +665,7 @@ const buildEmailArgs = (orderData, products, builtTotals, newYorkTime) => ({
   payment_zone: orderData.payment_zone,
   payment_country: orderData.payment_country,
   comment: orderData.comment,
+  shipping_custom_field: orderData?.shipping_custom_field ?? null
 });
 
 // ─── Confirmation emails ───────────────────────────────────────
@@ -675,7 +676,7 @@ export const _sendConfirmationEmails = async ({
   shipping_address_1, shipping_address_2,
   shipping_city, shipping_zone, shipping_postcode, shipping_country, shipping_method,
   payment_method, payment_firstname, payment_lastname,
-  payment_address_1, payment_city, payment_zone, payment_country, comment,
+  payment_address_1, payment_city, payment_zone, payment_country, comment,shipping_custom_field
 }) => {
   if (!email) return;
 
@@ -690,6 +691,7 @@ export const _sendConfirmationEmails = async ({
     shipping_city, shipping_zone, shipping_postcode, shipping_country, shipping_method,
     payment_method, payment_firstname, payment_lastname,
     payment_address_1, payment_city, payment_zone, payment_country, comment,
+    shipping_custom_field,
   };
   const adminEmail = process.env.MAIL_ADMIN || "contact@wineandchampagnegifts.com";
   try {
