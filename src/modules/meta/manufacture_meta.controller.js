@@ -24,7 +24,7 @@ export const getManufactureMeta = async (req, res) => {
         manufacturerId = parseInt(seoUrl.query.split('manufacturer_id=')[1]);
       }
     }
-
+   
     if (!manufacturerId) {
       return res.status(404).json({ message: 'Manufacturer not found' });
     }
@@ -50,9 +50,10 @@ export const getManufactureMeta = async (req, res) => {
         meta_description: true,
         meta_keyword: true,
         custom_title: true,
+        meta_title:true
       },
     });
-
+   
     if (!meta) return res.status(404).json({ message: 'Meta not found' });
 
     res.json(meta);

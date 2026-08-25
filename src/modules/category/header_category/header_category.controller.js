@@ -40,6 +40,7 @@ export const occasionTreasuresController = async (req, res) => {
     return successResponse(res, 200, "data fetched successful !", result)
 }
 export const OccasionsMenuController = async (req, res) => {
+    console.log("calling OccsionsMenu")
     const result = await OccasionsMenuService();
     return successResponse(res, 200, "data fetched successful !", result)
 }
@@ -74,6 +75,7 @@ export const homePageTextController = async (req,res) => {
 }
 
 export const homePageAllDataController = async (req, res) => {
+    console.log("calling All Data")
     const result = await homePageAllDataService();
     return successResponse(res, 200, "data fetched successful !", result)
 }
