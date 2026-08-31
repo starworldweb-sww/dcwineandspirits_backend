@@ -40,7 +40,7 @@ export const occasionTreasuresController = async (req, res) => {
     return successResponse(res, 200, "data fetched successful !", result)
 }
 export const OccasionsMenuController = async (req, res) => {
-    console.log("calling OccsionsMenu")
+
     const result = await OccasionsMenuService();
     return successResponse(res, 200, "data fetched successful !", result)
 }
@@ -57,25 +57,24 @@ export const loveBannersController = async (req, res) => {
     return successResponse(res, 200, "data fetched successful !", result)
 }
 
-export const giftbyOccasionController = async (req,res) => {
+export const giftbyOccasionController = async (req, res) => {
     const result = await giftbyOccasionService();
     return successResponse(res, 200, "data fetched sucessful !", result);
 }
-export const homePageProductsController = async (req,res) => {
+export const homePageProductsController = async (req, res) => {
     const result = await homePageProductsService();
     return successResponse(res, 200, "data fetched sucessful !", result);
 }
-export const shopByBrandTitleController = async (req,res) => {
+export const shopByBrandTitleController = async (req, res) => {
     const result = await shopByBrandTitleService();
     return successResponse(res, 200, "data fetched sucessful !", result);
 }
-export const homePageTextController = async (req,res) => {
+export const homePageTextController = async (req, res) => {
     const result = await homePageTextService();
     return successResponse(res, 200, "data fetched sucessful !", result);
 }
 
 export const homePageAllDataController = async (req, res) => {
-    console.log("calling All Data")
     const result = await homePageAllDataService();
     return successResponse(res, 200, "data fetched successful !", result)
 }

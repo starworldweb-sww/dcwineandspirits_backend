@@ -5,30 +5,32 @@ const BASE_URL = process.env.FRONTEND_URL;
 
 
 export const redirectService = async (slug, fullUrl) => {
+  
     if (!slug) return null;
  
     const baseUrl = process.env.FRONTEND_URL;
 
-    const record = await prisma.oc_redirect_url_manager_redirect.findFirst({
+    const record = await prisma.oc_redirect_manager.findFirst({
         where: {
-            status: true,
+            active: true,
             OR: [
-                { from: slug },
-                { from: `${baseUrl}/${slug}` },
-                { from: `${baseUrl}/${slug}/` },
+                { from_url: slug },
+                { from_url: `${baseUrl}/${slug}` },
+                { from_url: `${baseUrl}/${slug}/` },
 
 
                 ...(fullUrl ? [
-                    { from: fullUrl },
-                    { from: fullUrl.endsWith('/') ? fullUrl.slice(0, -1) : `${fullUrl}/` }
+                    { from_url: fullUrl },
+                    { from_url: fullUrl.endsWith('/') ? fullUrl.slice(0, -1) : `${fullUrl}/` }
                 ] : [])
             ]
         },
-        select: { type: true, to: true }
+        select: {to_url: true }
     });
 
     if (!record) return null;
-    const { type, to } = record;
-    if (to.startsWith('http')) return to;
-    return `${baseUrl}/${to}`;
+    const { to_url } = record;
+   
+    if (to_url.startsWith('http')) return to_url;
+    return `${baseUrl}/${to_url}`;
 };

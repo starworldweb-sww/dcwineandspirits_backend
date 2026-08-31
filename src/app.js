@@ -23,6 +23,7 @@ import coupon_router from './modules/coupon/coupon.routes.js';
 import orderRouter from './modules/customer order details/order.routes.js';
 import blogRoute from './modules/blog/blog.routes.js';
 import sitemapRouter from './modules/sitemap/sitemap.routes.js';
+import redirectRouter from './modules/redairect url/redirect.route.js';
 export const createApp = () => {
 
     const app = express();
@@ -72,6 +73,7 @@ export const createApp = () => {
     app.use('/api/v1/order-details',orderRouter)
     app.use('/api/v1/blog',blogRoute)
     app.use('/api/v1/sitemap',sitemapRouter)
+    app.use('/api/v1/redirect',redirectRouter)
 
     
 
