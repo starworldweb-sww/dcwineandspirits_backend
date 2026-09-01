@@ -110,10 +110,12 @@ const formatLinkItems = async (items) => {
     return Promise.all(
         items.map(async (item) => {
             const seo_url = await getSeoUrl(item?.link?.type, item?.link?.id)
+            
             return {
                 title: item?.title?.lang_1,
                 type: item?.link?.type || "",
                 id: item?.link?.id || "",
+                image:item?.itemBackground?.["background-image"] || "",
                 seo_url,
             }
         })
