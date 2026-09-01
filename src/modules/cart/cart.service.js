@@ -1,6 +1,6 @@
 import { prisma } from '../../../lib/prisma.js';
 import { parsePositiveInt } from '../../utils/parsePositiveInt.js';
-import { LANGUAGE_ID } from '../../utils/producthalper.js';
+import { LANGUAGE_ID } from '../../utils/productHelper.js';
 
 
 const DEFAULT_LIMIT = 12;

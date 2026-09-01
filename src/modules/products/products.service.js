@@ -1,7 +1,7 @@
 import pkg from "@prisma/client";
 const { Prisma } = pkg
 import { prisma } from "../../../lib/prisma.js";
-import { fetchSeoMap, getEffectivePrice, getValidSpecialPrice } from "../../utils/producthalper.js";
+import { fetchSeoMap, getEffectivePrice, getValidSpecialPrice } from "../../utils/productHelper.js";
 
 const LANGUAGE_ID = 1;
 const STORE_ID = 0;

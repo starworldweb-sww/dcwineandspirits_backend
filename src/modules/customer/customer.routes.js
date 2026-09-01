@@ -1,12 +1,13 @@
 
 import express, { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { authMiddleware } from '../../middleware/authMiddleware.js';
+
 import { changePassword, editAccountInformation, forgotPassword, login, logout, profile, register, resetPassword } from './customer.controller.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { validate } from './customer.validation.js';
 import { loginRules } from './customer.validation.js';
 import { registerRules } from './customer.validation.js';
+import { authMiddleware } from '../../middleware/authMiddleware.js';
 
 
 
