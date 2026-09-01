@@ -71,7 +71,29 @@ const getModuleData = async (module_id, module_type) => {
 
     return { heading, items, general }
 }
- export const getSeoUrl = async (type, id) => {
+//  export const getSeoUrl = async (type, id) => {
+//     if (!id || !type) return null
+
+//     const queryKey = typeToQueryKey[type]
+//     if (!queryKey) return null
+
+//     const exactQuery = `${queryKey}=${id}`
+
+//     const seo = await prisma.oc_seo_url.findFirst({
+//         where: {
+//             store_id: DEFAULT_STORE_ID,
+//             language_id: DEFAULT_LANGUAGE_ID,
+//             OR: [
+//                 { query: exactQuery },
+//                 { query: { startsWith: `${exactQuery}&` } },
+//             ],
+//         },
+//         select: { keyword: true },
+//     })
+
+//     return seo?.keyword ?? null
+// }
+export const getSeoUrl = async (type, id) => {
     if (!id || !type) return null
 
     const queryKey = typeToQueryKey[type]
@@ -79,19 +101,18 @@ const getModuleData = async (module_id, module_type) => {
 
     const exactQuery = `${queryKey}=${id}`
 
-    const seo = await prisma.oc_seo_url.findFirst({
-        where: {
-            store_id: DEFAULT_STORE_ID,
-            language_id: DEFAULT_LANGUAGE_ID,
-            OR: [
-                { query: exactQuery },
-                { query: { startsWith: `${exactQuery}&` } },
-            ],
-        },
-        select: { keyword: true },
-    })
+    const rows = await prisma.$queryRaw`
+        SELECT keyword FROM oc_seo_url
+        WHERE store_id = ${DEFAULT_STORE_ID}
+          AND language_id = ${DEFAULT_LANGUAGE_ID}
+          AND (
+              query = ${exactQuery}
+              OR CONVERT(query USING utf8mb4) COLLATE utf8mb4_general_ci LIKE ${exactQuery + '&%'}
+          )
+        LIMIT 1
+    `
 
-    return seo?.keyword ?? null
+    return rows?.[0]?.keyword ?? null
 }
 const formatItemsWithSeoUrl = async (items) => {
     return Promise.all(

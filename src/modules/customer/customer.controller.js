@@ -14,7 +14,7 @@ export const login = async (req, res) => {
         httpOnly: true,
         secure: env.nodeEnv === 'production',
         sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
-        domain: env.nodeEnv === 'production' ? '.wineandchampagnegifts.com' : undefined,
+        domain: env.nodeEnv === 'production' ? '.dcwineandspirits.com' : undefined,
         maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
@@ -85,7 +85,7 @@ export const logout = async (req, res) => {
         httpOnly: true,
         secure: env.nodeEnv === 'production',
         sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
-        domain: env.nodeEnv === 'production' ? '.wineandchampagnegifts.com' : undefined,
+        domain: env.nodeEnv === 'production' ? '.dcwineandspirits.com' : undefined,
     };
 
     cookiesToClear.forEach(cookieName => {
