@@ -771,7 +771,7 @@ const getCategoryData = async (categoryId, query) => {
     const limit = Math.min(parsePositiveInt(query.limit, DEFAULT_LIMIT), MAX_LIMIT);
     const sort = query.sort || "default";
     const filters = parseCategoryFilters(query);
-
+    
     const [category, categoryDesc, subCategories, productLinks, breadcrumbs] = await Promise.all([
         prisma.oc_category.findUnique({ where: { category_id: categoryId } }),
         prisma.oc_category_description.findFirst({
@@ -838,19 +838,12 @@ const getCategoryData = async (categoryId, query) => {
         productOptionMap,
     });
 
-    // apply sort (previously ignored)
+   
     const sortedProducts = applyDisplayOrder(filtered, sort);
-    // "default" keeps the price-ascending order getProductsSummary already applies
-
-    // drop helper-only fields before sending to the client
     const cleanedProducts = sortedProducts.map(({ id, category_ids, sort_order, ...rest }) => rest);
-
-    // paginate AFTER filtering (previously not applied at all)
     const paginatedProducts = paginateItems(cleanedProducts, page, limit);
-
-    // brand list should reflect the filtered set the user is looking at
     const brandMap = new Map();
-    cleanedProducts.forEach((p) => {
+    products.forEach((p) => {
         if (p.manufacturer && !brandMap.has(p.manufacturer.manufacturer_id)) {
             brandMap.set(p.manufacturer.manufacturer_id, p.manufacturer);
         }
@@ -861,7 +854,7 @@ const getCategoryData = async (categoryId, query) => {
     const priceRange = allPrices.length
         ? { min: Math.min(...allPrices), max: Math.max(...allPrices) }
         : { min: 0, max: 0 };
-
+  
     return {
         type: "category",
         category_id: categoryId,
