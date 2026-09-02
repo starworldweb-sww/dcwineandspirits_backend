@@ -204,6 +204,7 @@ const mapProducts = async (productIds, { sort = "default", categoryMap } = {}) =
             manufacturer_id: product.manufacturer_id || null,
             category_ids: categoryMap?.get(product.product_id) ?? [],
             slug: seoMap.get(`product_id=${product.product_id}`) ?? null,
+            sort_order: product.sort_order,
         };
     });
 
@@ -291,6 +292,35 @@ const paginateItems = (items, page, limit) => {
         total_pages: Math.ceil(total / limit) || 0,
     };
 };
+
+const isPriorityProduct = (p) => {
+    const so = Number(p.sort_order);
+    return Number.isFinite(so) && so < 0;
+};
+
+// group 0 = top (priority), 1 = normal, 2 = out of stock (bottom)
+const getDisplayGroup = (p) => {
+    if (isPriorityProduct(p)) return 0;
+    if (!p.in_stock) return 2;
+    return 1;
+};
+
+const compareWithinGroup = (a, b, sort, priceGetter) => {
+    if (sort === "price_asc") return priceGetter(a) - priceGetter(b);
+    if (sort === "price_desc") return priceGetter(b) - priceGetter(a);
+    if (sort === "name_asc") return (a.name ?? "").localeCompare(b.name ?? "");
+    return 0;
+};
+
+// priceGetter optional hai, default final_price field use karega
+const applyDisplayOrder = (products, sort, priceGetter = (p) => Number(p.final_price)) => {
+    return [...products].sort((a, b) => {
+        const groupDiff = getDisplayGroup(a) - getDisplayGroup(b);
+        if (groupDiff !== 0) return groupDiff;
+        return compareWithinGroup(a, b, sort, priceGetter);
+    });
+};
+
 const buildBrandList = (allProducts, manufacturers, seoMap, selectedIds) => {
     const selectedSet = new Set(selectedIds);
 
@@ -633,13 +663,22 @@ const resolveSlugOrId = async (slugOrId) => {
     if (!isNaN(slugOrId)) {
         const id = Number(slugOrId);
 
-        const product = await prisma.oc_product.findUnique({ where: { product_id: id } });
+        const product = await prisma.oc_product.findUnique({
+            where: { product_id: id },
+            select: { product_id: true },
+        });
         if (product) return { type: "product", id };
 
-        const category = await prisma.oc_category.findUnique({ where: { category_id: id } });
+        const category = await prisma.oc_category.findUnique({
+            where: { category_id: id },
+            select: { category_id: true },
+        });
         if (category) return { type: "category", id };
 
-        const manufacturer = await prisma.oc_manufacturer.findUnique({ where: { manufacturer_id: id } });
+        const manufacturer = await prisma.oc_manufacturer.findUnique({
+            where: { manufacturer_id: id },
+            select: { manufacturer_id: true },
+        });
         if (manufacturer) return { type: "manufacturer", id };
     }
 
@@ -660,6 +699,7 @@ const getProductsSummary = async (productIds) => {
                 price: true,
                 manufacturer_id: true,
                 quantity: true,
+                sort_order: true,
             },
         }),
         prisma.oc_product_description.findMany({
@@ -710,6 +750,7 @@ const getProductsSummary = async (productIds) => {
             special_price: activeSpecial?.price ?? null,
             final_price: finalPrice, // sorting ke liye
             in_stock: p.quantity > 0,
+            sort_order: p.sort_order,
             manufacturer: brand
                 ? { manufacturer_id: brand.manufacturer_id, name: brand.name, image: brand.image }
                 : null,
@@ -798,18 +839,11 @@ const getCategoryData = async (categoryId, query) => {
     });
 
     // apply sort (previously ignored)
-    let sortedProducts = filtered;
-    if (sort === "price_asc") {
-        sortedProducts = [...filtered].sort((a, b) => Number(a.final_price) - Number(b.final_price));
-    } else if (sort === "price_desc") {
-        sortedProducts = [...filtered].sort((a, b) => Number(b.final_price) - Number(a.final_price));
-    } else if (sort === "name_asc") {
-        sortedProducts = [...filtered].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
-    }
+    const sortedProducts = applyDisplayOrder(filtered, sort);
     // "default" keeps the price-ascending order getProductsSummary already applies
 
     // drop helper-only fields before sending to the client
-    const cleanedProducts = sortedProducts.map(({ id, category_ids, ...rest }) => rest);
+    const cleanedProducts = sortedProducts.map(({ id, category_ids, sort_order, ...rest }) => rest);
 
     // paginate AFTER filtering (previously not applied at all)
     const paginatedProducts = paginateItems(cleanedProducts, page, limit);
@@ -890,18 +924,20 @@ const getManufacturerData = async (manufacturerId, query = {}) => {
     });
 
     // apply sort
-    let sortedProducts = filtered;
-    if (sort === "price_asc") {
-        sortedProducts = [...filtered].sort((a, b) => Number(a.final_price) - Number(b.final_price));
-    } else if (sort === "price_desc") {
-        sortedProducts = [...filtered].sort((a, b) => Number(b.final_price) - Number(a.final_price));
-    } else if (sort === "name_asc") {
-        sortedProducts = [...filtered].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
-    }
+    // let sortedProducts = filtered;
+    // if (sort === "price_asc") {
+    //     sortedProducts = [...filtered].sort((a, b) => Number(a.final_price) - Number(b.final_price));
+    // } else if (sort === "price_desc") {
+    //     sortedProducts = [...filtered].sort((a, b) => Number(b.final_price) - Number(a.final_price));
+    // } else if (sort === "name_asc") {
+    //     sortedProducts = [...filtered].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    // }
+
+    const sortedProducts = applyDisplayOrder(filtered, sort);
     // "default" keeps the price-ascending order getProductsSummary already applies
 
     // drop helper-only fields before sending to the client
-    const cleanedProducts = sortedProducts.map(({ id, category_ids, ...rest }) => rest);
+    const cleanedProducts = sortedProducts.map(({ id, category_ids, sort_order, ...rest }) => rest);
 
     // paginate AFTER filtering — this is what makes hasNextPage / infinite
     // scroll actually work on brand pages, which it currently doesn't
@@ -1083,21 +1119,41 @@ const getBestsellerProductsSummary = (excludeProductId, limit = 10) =>
 const getFullProductData = async (productId) => {
     const now = new Date();
 
-    const product = await prisma.oc_product.findUnique({ where: { product_id: productId } });
+    const product = await prisma.oc_product.findUnique({
+        where: { product_id: productId },
+        select: {
+            product_id: true,
+            image: true,
+            price: true,
+            quantity: true,
+            minimum: true,
+            model: true,
+            sku: true,
+            upc: true,
+            ean: true,
+            mpn: true,
+            weight: true,
+            length: true,
+            width: true,
+            height: true,
+            manufacturer_id: true,
+            date_added: true,
 
+        },
+    });
     if (!product) return null;
 
     const [
         description,
         seo,
         images,
-        specials,
+        // specials,
         discounts,
         manufacturer,
         productOptions,
         relatedRows,
         attributeRows,
-        reviews,
+        // reviews,
         videos,
         downloadRows,
         latestProducts,
@@ -1115,12 +1171,18 @@ const getFullProductData = async (productId) => {
             orderBy: { sort_order: "asc" },
             select: { product_image_id: true, image: true, sort_order: true },
         }),
-        prisma.oc_product_special.findMany({
-            where: { product_id: productId, customer_group_id: CUSTOMER_GROUP_ID },
-        }),
+        // prisma.oc_product_special.findMany({
+        //     where: { product_id: productId, customer_group_id: CUSTOMER_GROUP_ID },
+        // }),
         prisma.oc_product_discount.findMany({
             where: { product_id: productId, customer_group_id: CUSTOMER_GROUP_ID },
             orderBy: { quantity: "asc" },
+            select: {
+                quantity: true,
+                price: true,
+                priority: true,
+                // date_start / date_end mat lo agar zero-date issue hai
+            },
         }),
         prisma.oc_manufacturer.findUnique({ where: { manufacturer_id: product.manufacturer_id } }),
         prisma.oc_product_option.findMany({
@@ -1133,10 +1195,10 @@ const getFullProductData = async (productId) => {
         prisma.oc_product_attribute.findMany({
             where: { product_id: productId, language_id: LANGUAGE_ID },
         }),
-        prisma.oc_review.findMany({
-            where: { product_id: productId, status: true },
-            orderBy: { date_added: "desc" },
-        }),
+        // prisma.oc_review.findMany({
+        //     where: { product_id: productId, status: true },
+        //     orderBy: { date_added: "desc" },
+        // }),
         prisma.oc_me_product_video.findMany({
             where: { product_id: productId },
             orderBy: { sort_order: "asc" },
@@ -1149,8 +1211,31 @@ const getFullProductData = async (productId) => {
         getBestsellerProductsSummary(productId, 10),
     ]);
 
-    // ---- Active special price nikalo ----
 
+    const specials = await prisma.$queryRaw`
+    SELECT
+        product_special_id,
+        product_id,
+        customer_group_id,
+        priority,
+        price,
+        CASE WHEN date_start = '0000-00-00' THEN NULL ELSE date_start END AS date_start,
+        CASE WHEN date_end = '0000-00-00' THEN NULL ELSE date_end END AS date_end
+    FROM oc_product_special
+    WHERE product_id = ${productId} AND customer_group_id = ${CUSTOMER_GROUP_ID}
+`;
+    // ---- Active special price nikalo ----
+    const reviews = await prisma.$queryRaw`
+    SELECT
+        review_id,
+        author,
+        text,
+        rating,
+        CASE WHEN date_added = '0000-00-00 00:00:00' THEN NULL ELSE date_added END AS date_added
+    FROM oc_review
+    WHERE product_id = ${productId} AND status = 1
+    ORDER BY review_id DESC
+`;
     const activeSpecial = specials
         .filter((s) => isDateActive(s?.date_start, s?.date_end, now))
         .sort((a, b) => a.priority - b.priority)[0];
@@ -1559,7 +1644,12 @@ export const getSearchResultsService = async (query) => {
         filters.manufacturerIds.includes(m.manufacturer_id)
     );
 
-    const paginated = paginateItems(filtered, page, limit);
+    const sortedFiltered = applyDisplayOrder(
+        filtered,
+        sort,
+        (p) => getEffectivePrice(p.price, p.special_price)
+    );
+    const paginated = paginateItems(sortedFiltered, page, limit);
 
     return {
         type: "search",
@@ -1602,7 +1692,7 @@ export const getSearchResultsService = async (query) => {
         },
         products: {
             ...paginated,
-            items: paginated.items.map(({ category_ids, ...product }) => product),
+            items: paginated.items.map(({ category_ids, sort_order, ...product }) => product),
         },
     };
 };
@@ -1622,6 +1712,7 @@ export const mostviewdproductservice = async () => {
             image: true,
             quantity: true,
             viewed: true,
+            sort_order: true,
             oc_product_description: {
                 where: { language_id: 1 },
                 select: {
@@ -1668,17 +1759,26 @@ export const mostviewdproductservice = async () => {
         return startOk && endOk;
     };
 
+
+
     const flatItems = result.map(({ oc_product_description, oc_product_special, ...product }) => {
         const validSpecial = oc_product_special.find(isValidSpecial);
-
         return {
             ...product,
             name: oc_product_description[0]?.name ?? null,
             original_price: product.price,
             special_price: validSpecial?.price ?? null,
             slug: slugMap[product.product_id] ?? null,
+            in_stock: product.quantity > 0
         };
     });
 
-    return flatItems;
+    const ordered = applyDisplayOrder(
+        flatItems,
+        "default",
+        (p) => Number(p.special_price ?? p.original_price)
+    );
+    return ordered.map(({ sort_order, ...rest }) => rest);
+
+    // return flatItems;
 }

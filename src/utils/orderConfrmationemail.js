@@ -160,7 +160,7 @@ export const generateOrderConfirmationEmail = ({
 
             <!-- Logo -->
             <img
-              src="https://www.dcwineandspirits.com/image/cache/catalog/logo/dc-wine_logo-360x90.png"
+              src="https://www.admin.dcwineandspirits.com/image/cache/catalog/logo/dc-wine_logo-360x90.png"
               alt="DC Wine &amp; Spirits"
               width="180"
               style="display:block;margin:0 auto 28px;max-width:220px;height:auto;border:0;"
@@ -387,7 +387,7 @@ export const generateOrderConfirmationEmail = ({
               <tr>
                 <td style="padding:36px 40px;text-align:center;">
 
-                  <img src="https://www.dcwineandspirits.com/image/cache/catalog/logo/dc-wine_logo-360x90.png"
+                  <img src="https://www.admin.dcwineandspirits.com/image/cache/catalog/logo/dc-wine_logo-360x90.png"
                     alt="DC Wine &amp; Spirits"
                     width="150"
                     style="display:block;margin:0 auto 20px;max-width:180px;height:auto;border:0;filter:brightness(0) invert(1);opacity:0.9;"

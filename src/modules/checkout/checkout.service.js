@@ -693,19 +693,19 @@ export const _sendConfirmationEmails = async ({
     payment_address_1, payment_city, payment_zone, payment_country, comment,
     shipping_custom_field,
   };
-  const adminEmail = process.env.MAIL_ADMIN || "contact@wineandchampagnegifts.com";
+  const adminEmail = process.env.MAIL_ADMIN || "order@dcwineandspirits.com";
   try {
     await transporter.sendMail({
       from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
       to: email,
-      subject: `Order Confirmed #${result.order_id} — Wine & Champagne Gifts`,
+      subject: `Order Confirmed #${result.order_id} — DC Wine & Spirits`,
       html: generateOrderConfirmationEmail(emailPayload),
     });
 
     // await transporter.sendMail({
     //   from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
     //   to: adminEmail,
-    //   subject: `New Order #${result.order_id} — Wine & Champagne Gifts`,
+    //   subject: `New Order #${result.order_id} — DC Wine & Spirits`,
     //   html: generateOrderConfirmationEmail(emailPayload),
     // });
   } catch (err) {
