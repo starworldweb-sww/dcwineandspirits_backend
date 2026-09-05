@@ -6,7 +6,7 @@ import { fetchSeoMap, getEffectivePrice, getValidSpecialPrice } from "../../util
 const LANGUAGE_ID = 1;
 const STORE_ID = 0;
 const CUSTOMER_GROUP_ID = 1;
-const DEFAULT_LIMIT = 24;
+const DEFAULT_LIMIT = 48;
 const MAX_LIMIT = 100;
 
 
@@ -606,22 +606,26 @@ const allProductsData = async () => {
     return data;
 };
 
-export const getAllProductsServices = async (page = 1, limit = 24) => {
-    const [allbrand, allparentCategory, allproducts] = await Promise.all([
-        allbrandData(),
-        allParentCategoryData(),
+export const getAllProductsServices = async (page = 1, limit = 48) => {
+    const [
+        // allbrand,
+        //  allparentCategory,
+          allproducts] = await Promise.all([
+        // allbrandData(),
+        // allParentCategoryData(),
         allProductsData(),
     ]);
 
     // Paginate products
+    const data = allproducts.filter((i)=>Number(i?.product_id) !== 202)
     const start = (page - 1) * limit;
-    const paginatedProducts = allproducts.slice(start, start + limit);
-    const total = allproducts.length;
+    const paginatedProducts = data.slice(start, start + limit);
+    const total = data.length;
     const totalPages = Math.ceil(total / limit);
 
     return {
-        allbrand,
-        allparentCategory,
+        // allbrand,
+        // allparentCategory,
         allproducts: paginatedProducts,
         total,
         page,

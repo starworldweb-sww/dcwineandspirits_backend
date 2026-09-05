@@ -109,8 +109,8 @@ export const getAllProductsForSitemap = async () => {
     select: { query: true, keyword: true },
   });
 
-  return products
-    .map((prod) => {
+  return products.
+    filter((i)=> i?.product_id !== 202).map((prod) => {
       const seo = seoUrls.find((s) => s.query === `product_id=${prod.product_id}`);
       const desc = prod.oc_product_description?.[0];
       if (!seo?.keyword) return null;
