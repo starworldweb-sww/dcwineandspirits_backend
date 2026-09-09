@@ -47,7 +47,7 @@ const getNewsletterWelcomeTemplate = (email) => {
                                                     Your Coupon Code
                                                 </p>
                                                 <p style="margin:6px 0 0; font-size:28px; font-weight:bold; color:#ff6b35; letter-spacing:2px;">
-                                                    WCG10
+                                                    WELCOME10
                                                 </p>
                                             </div>
                                         </td>
@@ -119,12 +119,20 @@ export const newsletterService = async (email, ip) => {
         });
 
         await transporter.sendMail({
-            from: `" Wine & champagne gifts "${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+            from: `" Dc Wine & Spirits "${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
             to: email,
             subject: "Welcome! Here's your $10 coupon 🎁",
             html: getNewsletterWelcomeTemplate(email)
         });
-
+        await transporter.sendMail({
+            from: `" Dc Wine & Spirits "${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+            to: [
+                "contact@dcwineandspirits.com",
+                "order@dcwineandspirits.com"
+            ],
+            subject: "New Subscriber",
+            html: getNewsletterWelcomeTemplate(email)
+        });
         return {
             success: true,
             message: "Thank you for subscribing! You'll now receive our latest updates, offers, and $10 off your first order.",

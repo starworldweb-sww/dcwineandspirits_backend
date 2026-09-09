@@ -24,6 +24,7 @@ import orderRouter from './modules/customer order details/order.routes.js';
 import blogRoute from './modules/blog/blog.routes.js';
 import sitemapRouter from './modules/sitemap/sitemap.routes.js';
 import redirectRouter from './modules/redairect url/redirect.route.js';
+import contactRouter from './modules/contact/contact.routes.js';
 export const createApp = () => {
 
     const app = express();
@@ -74,6 +75,7 @@ export const createApp = () => {
     app.use('/api/v1/blog',blogRoute)
     app.use('/api/v1/sitemap',sitemapRouter)
     app.use('/api/v1/redirect',redirectRouter)
+    app.use('/api/v1/contact',contactRouter)
 
     
 

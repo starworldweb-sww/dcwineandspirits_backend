@@ -172,25 +172,25 @@ export const loginCustomer = async (data, ip, cookies = {}) => {
     },
   });
 
-    const guestSessionId = cookies?.guest_session || '';
-    if (guestSessionId) {
-      await mergeGuestCartService({
-        sessionId: guestSessionId,
-        customerId: customer.customer_id,
-      });
-    }
+  const guestSessionId = cookies?.guest_session || '';
+  if (guestSessionId) {
+    await mergeGuestCartService({
+      sessionId: guestSessionId,
+      customerId: customer.customer_id,
+    });
+  }
 
   const guestWishlistCookie = cookies?.guest_wishlist || "";
   const guestProductIds = guestWishlistCookie
     ? guestWishlistCookie.split(",").map(Number).filter(Boolean)
     : [];
 
-    if (guestProductIds.length > 0) {
-      await mergeGuestWishlistService({
-        customerId: customer.customer_id,
-        guestProductIds,
-      });
-    }
+  if (guestProductIds.length > 0) {
+    await mergeGuestWishlistService({
+      customerId: customer.customer_id,
+      guestProductIds,
+    });
+  }
 
   const token = generateToken({
     customer_id: customer.customer_id,
@@ -252,6 +252,15 @@ export const registerCustomer = async (data, ip) => {
       subject: "Welcome! Here's your $10 coupon 🎁",
       html: getNewsletterWelcomeTemplate(email),
     });
+    await transporter.sendMail({
+      from: `" Dc Wine & Spirits "${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+      to: [
+        "contact@dcwineandspirits.com",
+        "order@dcwineandspirits.com"
+      ],
+      subject: "New Subscriber",
+      html: getNewsletterWelcomeTemplate(email)
+    });
   }
 
   const newCustomer = await prisma.oc_customer.create({
@@ -278,19 +287,19 @@ export const registerCustomer = async (data, ip) => {
     },
   });
 
-    await prisma.oc_customer_activity.create({
-      data: {
-        customer_id: newCustomer.customer_id || 0,
-        key: "register new customer",
-        data: JSON.stringify({
-          "customer_id": newCustomer?.customer_id,
-          "name": `${newCustomer?.firstname} ${newCustomer?.lastname}`,
-        }),
-        ip: ip,
-        date_added: newYorkTime
-      }
-    })
-await transporter.sendMail({
+  await prisma.oc_customer_activity.create({
+    data: {
+      customer_id: newCustomer.customer_id || 0,
+      key: "register new customer",
+      data: JSON.stringify({
+        "customer_id": newCustomer?.customer_id,
+        "name": `${newCustomer?.firstname} ${newCustomer?.lastname}`,
+      }),
+      ip: ip,
+      date_added: newYorkTime
+    }
+  })
+  await transporter.sendMail({
     from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
     to: email,
     subject: 'Welcome to DC Wine & Spirits',
@@ -553,11 +562,11 @@ export const forgotPasswordRequestService = async (email) => {
   });
 
   const resetLink = `${process.env.FRONTEND_URL}/account/reset?code=${resetCode}`;
-await transporter.sendMail({
-  from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-  to: customer.email,
-  subject: "Reset Your Password - DC Wine & Spirits",
-  html: `<!DOCTYPE html>
+  await transporter.sendMail({
+    from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+    to: customer.email,
+    subject: "Reset Your Password - DC Wine & Spirits",
+    html: `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -735,7 +744,7 @@ await transporter.sendMail({
 
 </body>
 </html> `,
-});
+  });
 
   return { message: "Password reset link sent to your email" };
 };
@@ -801,11 +810,11 @@ export const accountInformationService = async (customer_id, data, ip) => {
     }),
     fields.email
       ? prisma.oc_customer.findFirst({
-          where: {
-            email: fields.email.toLowerCase().trim(),
-            NOT: { customer_id },
-          },
-        })
+        where: {
+          email: fields.email.toLowerCase().trim(),
+          NOT: { customer_id },
+        },
+      })
       : null,
   ]);
 
