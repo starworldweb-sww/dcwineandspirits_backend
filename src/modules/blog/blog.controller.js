@@ -7,6 +7,7 @@ import {
   getAllBlogCategoriesService,
   getCategoryBySlugService,
   CountViewsServices,
+  getPostsByAuthorNameService,
 } from "./blog.service.js";
 
 
@@ -153,3 +154,28 @@ export const countViews = async(req,res)=>{
 
   return successResponse(res,200,"",result)
 }
+
+
+
+
+export const getPostsByAuthorNameController = async (req, res) => {
+    try {
+        const { firstname, lastname, page, limit } = req.query;
+
+        const result = await getPostsByAuthorNameService({
+            authorFirstname: firstname,
+            authorLastname: lastname,
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+        });
+
+        return res.json({
+            success: true,
+            message: "Posts fetched successfully",
+            data: result,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: "Something went wrong" });
+    }
+};

@@ -469,3 +469,100 @@ export const CountViewsServices = async (post_id) => {
 
     return data ;
 }
+
+
+
+export const getPostsByAuthorNameService = async ({
+    authorFirstname,
+    authorLastname,
+    page = 1,
+    limit = 10,
+} = {}) => {
+    // Step 1: Validation — firstname zaroori hai
+    if (!authorFirstname) {
+        return { posts: [], pagination: { total: 0, page, limit, totalPages: 0 } };
+    }
+
+    // Step 2: oc_user table mein naam se user dhoondo
+    const user = await prisma.oc_user.findFirst({
+        where: {
+            firstname: { equals: authorFirstname },
+            ...(authorLastname && { lastname: { equals: authorLastname } }),
+        },
+        select: { user_id: true, firstname: true, lastname: true },
+    });
+
+    // Agar naam se koi author hi nahi mila
+    if (!user) {
+        return { posts: [], pagination: { total: 0, page, limit, totalPages: 0 } };
+    }
+
+    const authorId = user.user_id;
+    const skip = (page - 1) * limit;
+
+    const where = {
+        status: true,
+        author_id: authorId,
+    };
+
+    // Step 3: Us author_id ke saare posts + total count ek sath fetch karo
+    const [posts, total] = await Promise.all([
+        prisma.oc_journal3_blog_post.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: [{ sort_order: "asc" }, { date_created: "desc" }],
+            include: {
+                oc_journal3_blog_post_description: {
+                    where: { language_id: 1 },
+                    select: {
+                        name: true,
+                        tags: true,
+                        keyword: true,
+                        description: true,
+                    },
+                },
+                oc_user: {
+                    select: {
+                        firstname: true,
+                        lastname: true,
+                    },
+                },
+            },
+        }),
+
+        prisma.oc_journal3_blog_post.count({ where }),
+    ]);
+
+    // Step 4: Response format wahi rakha jo aapke baaki services mein hai
+    const formatted = posts.map((post) => {
+        const desc = post.oc_journal3_blog_post_description?.[0] ?? {};
+
+        return {
+            post_id: post.post_id,
+            author_id: post.author_id,
+            author_firstname: post.oc_user?.firstname ?? null,
+            author_lastname: post.oc_user?.lastname ?? null,
+            image: post.image,
+            status: post.status,
+            sort_order: post.sort_order,
+            date_created: post.date_created,
+            date_updated: post.date_updated,
+            title: desc.name ?? null,
+            slug: desc.keyword ?? null,
+            views: post.views,
+            comments: post.comments,
+            description: desc.description,
+        };
+    });
+
+    return {
+        posts: formatted,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
+};
