@@ -566,3 +566,107 @@ export const getPostsByAuthorNameService = async ({
         },
     };
 };
+
+
+
+
+
+export const getRecommendedPostsService = async (postId, limit = 4) => {
+    // Step 1: Current post ki categories aur tags nikaalo
+    const currentPost = await prisma.oc_journal3_blog_post_description.findFirst({
+        where: { post_id: postId, language_id: 1 },
+        select: { tags: true }
+    });
+
+    const categoryLinks = await prisma.oc_journal3_blog_post_to_category.findMany({
+        where: { post_id: postId },
+        select: { category_id: true }
+    });
+    const categoryIds = categoryLinks.map(c => c.category_id);
+
+    let relatedPostIds = [];
+
+    
+    if (categoryIds.length > 0) {
+        const catPosts = await prisma.oc_journal3_blog_post_to_category.findMany({
+            where: {
+                category_id: { in: categoryIds },
+                post_id: { not: postId }
+            },
+            select: { post_id: true },
+            distinct: ["post_id"]
+        });
+        relatedPostIds = catPosts.map(p => p.post_id);
+    }
+
+    
+    if (relatedPostIds.length < limit && currentPost?.tags) {
+        const firstTag = currentPost.tags.split(",")[0]?.trim();
+        if (firstTag) {
+            const tagPosts = await prisma.oc_journal3_blog_post_description.findMany({
+                where: {
+                    tags: { contains: firstTag },
+                    post_id: { not: postId },
+                    language_id: 1
+                },
+                select: { post_id: true }
+            });
+            relatedPostIds = [...new Set([...relatedPostIds, ...tagPosts.map(p => p.post_id)])];
+        }
+    }
+
+    // Step 4: Fetch actual post details (limit + status true)
+    let posts = await prisma.oc_journal3_blog_post.findMany({
+        where: {
+            post_id: { in: relatedPostIds },
+            status: true
+        },
+        take: limit,
+        orderBy: { views: "desc" }, 
+        include: {
+            oc_journal3_blog_post_description: {
+                where: { language_id: 1 },
+                select: { name: true, keyword: true, description: true }
+            },
+            oc_user: { select: { firstname: true, lastname: true } }
+        }
+    });
+
+    
+    if (posts.length < limit) {
+        const fillCount = limit - posts.length;
+        const existingIds = posts.map(p => p.post_id).concat(postId);
+
+        const fallbackPosts = await prisma.oc_journal3_blog_post.findMany({
+            where: {
+                status: true,
+                post_id: { notIn: existingIds }
+            },
+            take: fillCount,
+            orderBy: { views: "desc" },
+            include: {
+                oc_journal3_blog_post_description: {
+                    where: { language_id: 1 },
+                    select: { name: true, keyword: true, description: true }
+                },
+                oc_user: { select: { firstname: true, lastname: true } }
+            }
+        });
+
+        posts = [...posts, ...fallbackPosts];
+    }
+
+    return posts.map((post) => {
+        const desc = post.oc_journal3_blog_post_description?.[0] ?? {};
+        return {
+            post_id: post.post_id,
+            title: desc.name,
+            slug: desc.keyword,
+            image: post.image,
+            views: post.views,
+            author_firstname: post.oc_user?.firstname,
+            author_lastname: post.oc_user?.lastname,
+            date_created: post.date_created,
+        };
+    });
+};

@@ -8,6 +8,7 @@ import {
   getCategoryBySlug,
   countViews,
   getPostsByAuthorNameController,
+  getRecommendedPosts,
   
 } from "./blog.controller.js";
 
@@ -20,6 +21,7 @@ blogRoute.get("/search", searchByKeyword);
 blogRoute.get("/posts/author", getPostsByAuthorNameController);
 blogRoute.get("/posts/:slug", getPostBySlug);
 blogRoute.post("/view-count", countViews);
+blogRoute.get("/posts/:postId/recommended", getRecommendedPosts);
 
 
 export default blogRoute;

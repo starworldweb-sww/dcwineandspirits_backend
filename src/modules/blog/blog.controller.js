@@ -8,6 +8,7 @@ import {
   getCategoryBySlugService,
   CountViewsServices,
   getPostsByAuthorNameService,
+  getRecommendedPostsService,
 } from "./blog.service.js";
 
 
@@ -178,4 +179,33 @@ export const getPostsByAuthorNameController = async (req, res) => {
         console.error(error);
         return res.status(500).json({ success: false, message: "Something went wrong" });
     }
+};
+
+
+
+
+
+export const getRecommendedPosts = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { limit = 4 } = req.query;
+
+    if (!postId || isNaN(postId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid post ID required",
+      });
+    }
+
+    const posts = await getRecommendedPostsService(Number(postId), Number(limit));
+
+    return res.status(200).json({
+      success: true,
+      message: "Recommended posts fetched successfully",
+      data: { posts },
+    });
+  } catch (error) {
+    console.error("[getRecommendedPosts]", error.message);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
