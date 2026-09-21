@@ -126,6 +126,51 @@ export const getAllBlogCategoriesService = async () => {
     });
 };
 
+
+
+// blog related products
+const getBlogProducts = async (postId) => {
+    const links = await prisma.oc_journal3_blog_post_to_product.findMany({
+        where: { post_id: postId },
+        select: { product_id: true },
+    });
+
+    const ids = links.map((l) => l.product_id);
+    if (!ids.length) return [];
+
+    const products = await prisma.oc_product.findMany({
+        where: { product_id: { in: ids }, status: true },
+        select: {
+            product_id: true,
+            image: true,
+            price: true,
+            oc_product_description: {
+                where: { language_id: 1 },
+                select: { name: true },
+            },
+        },
+    });
+
+
+    const seoUrls = await prisma.oc_seo_url.findMany({
+    where: {
+        query: { in: ids.map((id) => `product_id=${id}`) },
+        store_id: 0,
+        language_id: 1,
+    },
+    select: { query: true, keyword: true },
+});
+
+const seoMap = new Map(seoUrls.map((s) => [s.query, s.keyword]));
+
+    return products.map((p) => ({
+        product_id: p.product_id,
+        name: p.oc_product_description?.[0]?.name ?? null,
+        image: p.image,
+        price: p.price,
+        slug: seoMap.get(`product_id=${p.product_id}`) ?? null,
+    }));
+};
 export const getCategoryBySlugService = async (slug) => {
     const desc = await prisma.oc_journal3_blog_category_description.findFirst({
         where: { keyword: slug, language_id: 1 },
@@ -201,7 +246,8 @@ export const getPostBySlugService = async (slug) => {
         title: desc.name,
         content: desc.description,
         slug: desc.keyword,
-        views: post?.views
+        views: post?.views,
+        related_products: await getBlogProducts(post.post_id),
     };
 };
 
@@ -258,6 +304,7 @@ export const getPostByIdService = async (postId) => {
         meta_title: desc.meta_title ?? null,
         meta_keywords: desc.meta_keywords ?? null,
         meta_description: desc.meta_description ?? null,
+        related_products: await getBlogProducts(post.post_id),
     };
 };
 
