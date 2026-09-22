@@ -1323,6 +1323,7 @@ const getFullProductData = async (productId) => {
         author,
         text,
         rating,
+        image,
         CASE WHEN date_added = '0000-00-00 00:00:00' THEN NULL ELSE date_added END AS date_added
     FROM oc_review
     WHERE product_id = ${productId} AND status = 1
