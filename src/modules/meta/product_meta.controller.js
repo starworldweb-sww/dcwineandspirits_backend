@@ -1,6 +1,5 @@
 import { prisma } from "../../../lib/prisma.js";
 
-
 export const getProductMeta = async (req, res) => {
   try {
     const { identifier } = req.params;
@@ -17,7 +16,7 @@ export const getProductMeta = async (req, res) => {
           keyword: identifier,
           store_id: 0,
           language_id: languageId,
-        }
+        },
       });
 
       if (seoUrl?.query?.startsWith('product_id=')) {
@@ -27,9 +26,16 @@ export const getProductMeta = async (req, res) => {
 
     if (!productId) return res.status(404).json({ message: 'Product not found' });
 
+    const product = await prisma.oc_product.findFirst({
+      where: { product_id: productId, status: true },
+      select: { product_id: true },
+    });
+
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
     const meta = await prisma.oc_product_description.findFirst({
       where: {
-        product_id: productId,
+        product_id: product.product_id,
         language_id: languageId,
       },
       select: {
