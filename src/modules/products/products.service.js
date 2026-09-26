@@ -1534,7 +1534,7 @@ export const searchAllProductService = async (query) => {
   const limit = parseInt(query.limit) || 10;
   const skip = (page - 1) * limit;
   const now = new Date();
-  const zeroDate = new Date("0000-01-01");
+  const zeroDate = new Date("0000-00-00");
   const searchPattern = `%${searchText}%`;
 
   if (!searchText) {
@@ -1582,16 +1582,16 @@ export const searchAllProductService = async (query) => {
     FROM oc_product p
     LEFT JOIN oc_product_description pd
       ON pd.product_id = p.product_id AND pd.language_id = ${LANGUAGE_ID}
-    LEFT JOIN oc_product_special ps
-      ON ps.product_id = p.product_id
-      AND (ps.date_start <= ${now} OR ps.date_start = ${zeroDate})
-      AND (ps.date_end >= ${now} OR ps.date_end = ${zeroDate})
-      AND ps.price = (
-        SELECT MIN(ps2.price) FROM oc_product_special ps2
-        WHERE ps2.product_id = p.product_id
-          AND (ps2.date_start <= ${now} OR ps2.date_start = ${zeroDate})
-          AND (ps2.date_end >= ${now} OR ps2.date_end = ${zeroDate})
-      )
+   LEFT JOIN oc_product_special ps
+  ON ps.product_id = p.product_id
+  AND (ps.date_start = '0000-00-00' OR ps.date_start <= ${now})
+  AND (ps.date_end = '0000-00-00' OR ps.date_end >= ${now})
+  AND ps.price = (
+    SELECT MIN(ps2.price) FROM oc_product_special ps2
+    WHERE ps2.product_id = p.product_id
+      AND (ps2.date_start = '0000-00-00' OR ps2.date_start <= ${now})
+      AND (ps2.date_end = '0000-00-00' OR ps2.date_end >= ${now})
+  )
     WHERE p.status = 1 AND (
       p.model LIKE ${searchPattern}
       OR p.sku LIKE ${searchPattern}
@@ -1612,7 +1612,7 @@ export const searchAllProductService = async (query) => {
     LIMIT ${limit} OFFSET ${skip}
   `;
 
-  // SEO slugs
+  // SEO slug
   const productIds = searchData.map((p) => `product_id=${p.product_id}`);
   const seoUrls =
     productIds.length > 0
@@ -1674,7 +1674,7 @@ export const getSearchResultsService = async (query) => {
 
   const searchInt = parseInt(searchText);
   const now = new Date();
-  const zeroDate = new Date("0000-01-01");
+  const zeroDate = new Date("0000-00-00");
   const searchPattern = `%${searchText}%`;
 
   const productIdCondition = !isNaN(searchInt)
