@@ -9,10 +9,14 @@ const toSlug = (str) =>
         .replace(/\s+/g, "-")
         .replace(/-+/g, "-");
 
+const publishedWhere = () => ({
+    status: true,
+    date_created: { lte: new Date() },
+});
 export const getAllPostsService = async ({ page = 1, limit = 10, categoryId, categorySlug } = {}) => {
     const skip = (page - 1) * limit;
 
-    const where = { status: true };
+    const where = publishedWhere();
 
     if (categoryId || categorySlug) {
         let finalCategoryId = categoryId;
@@ -153,15 +157,15 @@ const getBlogProducts = async (postId) => {
 
 
     const seoUrls = await prisma.oc_seo_url.findMany({
-    where: {
-        query: { in: ids.map((id) => `product_id=${id}`) },
-        store_id: 0,
-        language_id: 1,
-    },
-    select: { query: true, keyword: true },
-});
+        where: {
+            query: { in: ids.map((id) => `product_id=${id}`) },
+            store_id: 0,
+            language_id: 1,
+        },
+        select: { query: true, keyword: true },
+    });
 
-const seoMap = new Map(seoUrls.map((s) => [s.query, s.keyword]));
+    const seoMap = new Map(seoUrls.map((s) => [s.query, s.keyword]));
 
     return products.map((p) => ({
         product_id: p.product_id,
@@ -212,10 +216,8 @@ export const getPostBySlugService = async (slug) => {
 
 
     const post = await prisma.oc_journal3_blog_post.findFirst({
-        where: {
-            post_id: desc.post_id,
-            status: true,
-        },
+        where: { post_id: desc.post_id, ...publishedWhere() },
+
     });
 
     if (!post) return null;
@@ -253,8 +255,8 @@ export const getPostBySlugService = async (slug) => {
 
 
 export const getPostByIdService = async (postId) => {
-    const post = await prisma.oc_journal3_blog_post.findUnique({
-        where: { post_id: postId },
+    const post = await prisma.oc_journal3_blog_post.findFirst({
+        where: { post_id: postId, ...publishedWhere() },
         include: {
             oc_journal3_blog_post_description: {
                 where: { language_id: 1 },
@@ -398,34 +400,43 @@ export const getPostByIdService = async (postId) => {
 export const searchPostsByKeywordService = async (keyword, { page = 1, limit = 10 } = {}) => {
     const skip = (page - 1) * limit;
     const likeKeyword = `%${keyword}%`;
+    const now = new Date();
+
 
     const descResults = await prisma.$queryRaw`
-        SELECT post_id, name, description, tags, keyword, meta_title, meta_keywords, meta_description
-        FROM oc_journal3_blog_post_description
-        WHERE language_id = 1
-        AND (
-            name LIKE ${likeKeyword}
-            OR tags LIKE ${likeKeyword}
-            OR keyword LIKE ${likeKeyword}
-            OR meta_keywords LIKE ${likeKeyword}
-            OR meta_description LIKE ${likeKeyword}
-        )
-        LIMIT ${limit} OFFSET ${skip}
-    `;
+    SELECT d.post_id, d.name, d.description, d.tags, d.keyword,
+           d.meta_title, d.meta_keywords, d.meta_description
+    FROM oc_journal3_blog_post_description d
+    INNER JOIN oc_journal3_blog_post p ON p.post_id = d.post_id
+    WHERE d.language_id = 1
+    AND p.status = 1
+    AND p.date_created <= ${now}
+    AND (
+        d.name LIKE ${likeKeyword}
+        OR d.tags LIKE ${likeKeyword}
+        OR d.keyword LIKE ${likeKeyword}
+        OR d.meta_keywords LIKE ${likeKeyword}
+        OR d.meta_description LIKE ${likeKeyword}
+    )
+    ORDER BY p.date_created DESC
+    LIMIT ${limit} OFFSET ${skip}
+`;
 
-    // 2. Total count (raw SQL)
     const countResult = await prisma.$queryRaw`
-        SELECT COUNT(*) AS total
-        FROM oc_journal3_blog_post_description
-        WHERE language_id = 1
-        AND (
-            name LIKE ${likeKeyword}
-            OR tags LIKE ${likeKeyword}
-            OR keyword LIKE ${likeKeyword}
-            OR meta_keywords LIKE ${likeKeyword}
-            OR meta_description LIKE ${likeKeyword}
-        )
-    `;
+    SELECT COUNT(*) AS total
+    FROM oc_journal3_blog_post_description d
+    INNER JOIN oc_journal3_blog_post p ON p.post_id = d.post_id
+    WHERE d.language_id = 1
+    AND p.status = 1
+    AND p.date_created <= ${now}
+    AND (
+        d.name LIKE ${likeKeyword}
+        OR d.tags LIKE ${likeKeyword}
+        OR d.keyword LIKE ${likeKeyword}
+        OR d.meta_keywords LIKE ${likeKeyword}
+        OR d.meta_description LIKE ${likeKeyword}
+    )
+`;
 
     const total = Number(countResult[0]?.total || 0);
 
@@ -449,7 +460,8 @@ export const searchPostsByKeywordService = async (keyword, { page = 1, limit = 1
         SELECT post_id, author_id, image, comments, status, sort_order, date_created, date_updated
         FROM oc_journal3_blog_post
         WHERE post_id IN (${Prisma.join(postIds)})
-        AND status = 1
+AND status = 1
+AND date_created <= ${now} 
     `;
 
     const postMap = Object.fromEntries(posts.map((p) => [p.post_id, p]));
@@ -495,26 +507,26 @@ export const searchPostsByKeywordService = async (keyword, { page = 1, limit = 1
 };
 
 export const CountViewsServices = async (post_id) => {
-   
-    const post =  await prisma.oc_journal3_blog_post.findFirst({
-        where:{
-            post_id:Number(post_id)
+
+    const post = await prisma.oc_journal3_blog_post.findFirst({
+        where: {
+            post_id: Number(post_id)
         },
-        select:{
-            views:true
+        select: {
+            views: true
         }
     })
-    if(!post) return 
+    if (!post) return
     const data = await prisma.oc_journal3_blog_post.update({
-        where: { post_id: post_id },
+        where: { post_id: Number(post_id) },
         data: {
-            
+
             views: post.views == null ? 1 : { increment: 1 },
         },
         select: { views: true },
     });
 
-    return data ;
+    return data;
 }
 
 
@@ -548,7 +560,7 @@ export const getPostsByAuthorNameService = async ({
     const skip = (page - 1) * limit;
 
     const where = {
-        status: true,
+        ...publishedWhere(),
         author_id: authorId,
     };
 
@@ -621,7 +633,7 @@ export const getPostsByAuthorNameService = async ({
 export const getRecommendedPostsService = async (postId, limit = 4) => {
     // Step 1: Current post ki categories aur tags nikaalo
     const currentPost = await prisma.oc_journal3_blog_post_description.findFirst({
-        where: { post_id: postId, language_id: 1 },
+        where: { post_id: postId, language_id: 1, },
         select: { tags: true }
     });
 
@@ -633,7 +645,7 @@ export const getRecommendedPostsService = async (postId, limit = 4) => {
 
     let relatedPostIds = [];
 
-    
+
     if (categoryIds.length > 0) {
         const catPosts = await prisma.oc_journal3_blog_post_to_category.findMany({
             where: {
@@ -646,7 +658,7 @@ export const getRecommendedPostsService = async (postId, limit = 4) => {
         relatedPostIds = catPosts.map(p => p.post_id);
     }
 
-    
+
     if (relatedPostIds.length < limit && currentPost?.tags) {
         const firstTag = currentPost.tags.split(",")[0]?.trim();
         if (firstTag) {
@@ -666,10 +678,10 @@ export const getRecommendedPostsService = async (postId, limit = 4) => {
     let posts = await prisma.oc_journal3_blog_post.findMany({
         where: {
             post_id: { in: relatedPostIds },
-            status: true
+            ...publishedWhere()
         },
         take: limit,
-        orderBy: { views: "desc" }, 
+        orderBy: { views: "desc" },
         include: {
             oc_journal3_blog_post_description: {
                 where: { language_id: 1 },
@@ -679,14 +691,14 @@ export const getRecommendedPostsService = async (postId, limit = 4) => {
         }
     });
 
-    
+
     if (posts.length < limit) {
         const fillCount = limit - posts.length;
         const existingIds = posts.map(p => p.post_id).concat(postId);
 
         const fallbackPosts = await prisma.oc_journal3_blog_post.findMany({
             where: {
-                status: true,
+                ...publishedWhere(),
                 post_id: { notIn: existingIds }
             },
             take: fillCount,
