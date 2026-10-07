@@ -122,3 +122,58 @@ export const couponServices = async (code, cartTotal, customerId) => {
     finalTotal: finalTotal.toFixed(2),
   };
 };
+
+
+
+
+
+
+export const getActiveCouponsService = async () => {
+  const allActiveCoupons = await prisma.oc_coupon.findMany({
+    where: { status: true },
+    select: {
+      coupon_id: true,
+      name: true,
+      code: true,
+      type: true,
+      discount: true,
+      total: true,
+      shipping: true,
+      date_start: true,
+      date_end: true,
+    },
+    orderBy: { coupon_id: "desc" },
+  });
+
+  const today = new Date();
+
+  // Date Checking
+  const validCoupons = allActiveCoupons.filter((coupon) => {
+    const startDate = coupon.date_start ? new Date(coupon.date_start) : null;
+    const endDate = coupon.date_end ? new Date(coupon.date_end) : null;
+
+    const hasNotStartedYet = startDate && !isNaN(startDate) && today < startDate;
+    const hasExpired = endDate && !isNaN(endDate) && today > endDate;
+
+    return !hasNotStartedYet && !hasExpired;
+  });
+
+  //Clean Format
+  const couponsForPage = validCoupons.map((coupon) => {
+    const endDate = coupon.date_end ? new Date(coupon.date_end) : null;
+    const hasValidEndDate = endDate && !isNaN(endDate);
+
+    return {
+      id: coupon.coupon_id,
+      name: coupon.name,
+      code: coupon.code,
+      type: coupon.type, 
+      discount: parseFloat(coupon.discount),
+      minimumTotal: parseFloat(coupon.total),
+      freeShipping: coupon.shipping,
+      expiresOn: hasValidEndDate ? endDate.toISOString() : null, // null = no expiry
+    };
+  });
+
+  return { success: true, coupons: couponsForPage };
+};
