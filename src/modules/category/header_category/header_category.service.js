@@ -131,12 +131,12 @@ const formatLinkItems = async (items) => {
     return Promise.all(
         items.map(async (item) => {
             const seo_url = await getSeoUrl(item?.link?.type, item?.link?.id)
-            
+
             return {
                 title: item?.title?.lang_1,
                 type: item?.link?.type || "",
                 id: item?.link?.id || "",
-                image:item?.itemBackground?.["background-image"] || "",
+                image: item?.itemBackground?.["background-image"] || "",
                 seo_url,
             }
         })
@@ -183,6 +183,7 @@ const getProductsByIds = async (ids = []) => {
         where: {
             product_id: { in: numericIds },
             status: true,
+            quantity: { gt: 0 }
         },
         select: {
             product_id: true,
@@ -192,10 +193,10 @@ const getProductsByIds = async (ids = []) => {
             quantity: true,
         },
     })
-
+    
     if (!products.length) return []
 
-    const productIds = products.map((p) => p.product_id)
+    const productIds = products.map((p) => p?.product_id)
 
     const descriptions = await prisma.oc_product_description.findMany({
         where: {
@@ -322,6 +323,7 @@ const getSpecialProductIds = async (limit) => {
 }
 
 const formatProductsItems = async (items) => {
+
     return Promise.all(
         items.map(async (item) => {
             const limit = Number(item?.filter?.limit) || 12
@@ -832,7 +834,7 @@ export const homePageAllDataService = async () => {
             data[key] = result.value
         } else {
             console.error(`homePageAllDataService: "${key}" failed ->`, result.reason)
-            data[key] = null 
+            data[key] = null
         }
     })
 
