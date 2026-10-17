@@ -1,24 +1,33 @@
-import { getPriceByLocation } from "./shipping_rates.service.js";
-import { successResponse, errorResponse } from "../../utils/apiResponse.js";
 
+import { getPriceByLocation } from "./shipping_rates.service.js";
 
 export const getShippingPrice = async (req, res) => {
-  const { countryId, zoneId, customerGroupId, quantity } = req.query;
+  const { countryId, zoneId, customerGroupId, quantity, postcode, productIds } = req.query;
 
   if (!countryId && !zoneId) {
-    return errorResponse(res, 400, 'countryId or zoneId is required');
+    return res.status(400).json({ success: false, message: 'countryId or zoneId is required' });
   }
 
+  const productIdList = [
+    ...new Set(
+      String(productIds || "")
+        .split(",")
+        .map((v) => parseInt(v.trim(), 10))
+        .filter((n) => Number.isInteger(n) && n > 0)
+    ),
+  ];
   const result = await getPriceByLocation({
     countryId: countryId ? Number(countryId) : undefined,
     zoneId: zoneId ? Number(zoneId) : undefined,
     customerGroupId: customerGroupId ? Number(customerGroupId) : undefined,
     quantity: quantity ? Number(quantity) : 1,
+    postcode: postcode ? String(postcode) : "",
+    productIds: productIdList,
   });
 
   if (!result) {
-    return errorResponse(res, 404, 'No shipping rate found for this location');
+    return res.status(404).json({ success: false, message: 'No shipping rate found for this location' });
   }
 
-  return successResponse(res, 200, 'Shipping rates fetched successfully', result);
+  return res.status(200).json({ success: true, ...result });
 };
