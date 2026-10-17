@@ -26,6 +26,8 @@ import sitemapRouter from './modules/sitemap/sitemap.routes.js';
 import redirectRouter from './modules/redairect url/redirect.route.js';
 import contactRouter from './modules/contact/contact.routes.js';
 import reviewRouter from './modules/review/review.route.js';
+import bulkrouter from './modules/bulkorderr/bulkorderr.routes.js';
+
 export const createApp = () => {
 
     const app = express();
@@ -60,6 +62,7 @@ export const createApp = () => {
 
     ///--------------- route api -------------------///
 
+    app.use('/api/v1/bulk-orders', bulkrouter)
     app.use('/api/v1/products', allProductRouter)
     app.use('/api/v1/customer', customerRouter)
     app.use('/api/v1/manufacturer', manufacturerRouter)
