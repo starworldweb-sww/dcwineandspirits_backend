@@ -320,7 +320,8 @@ const compareWithinGroup = (a, b, sort, priceGetter) => {
   if (sort === "price_asc") return priceGetter(a) - priceGetter(b);
   if (sort === "price_desc") return priceGetter(b) - priceGetter(a);
   if (sort === "name_asc") return (a.name ?? "").localeCompare(b.name ?? "");
-  return 0;
+    return Number(b.viewed ?? 0) - Number(a.viewed ?? 0);
+
 };
 
 // priceGetter optional hai, default final_price field use karega
@@ -758,6 +759,8 @@ const getProductsSummary = async (productIds) => {
                 manufacturer_id: true,
                 quantity: true,
                 sort_order: true,
+                viewed: true, 
+
             },
         }),
         prisma.oc_product_description.findMany({
@@ -811,6 +814,7 @@ const getProductsSummary = async (productIds) => {
             final_price: finalPrice, // sorting ke liye
             in_stock: p.quantity > 0,
             sort_order: p.sort_order,
+            viewed: p.viewed ?? 0,
             manufacturer: brand
                 ? { manufacturer_id: brand.manufacturer_id, name: brand.name, image: brand.image }
                 : null,
@@ -916,7 +920,7 @@ const getCategoryData = async (categoryId, query) => {
 
   const sortedProducts = applyDisplayOrder(filtered, sort);
   const cleanedProducts = sortedProducts.map(
-    ({ id, category_ids, sort_order, ...rest }) => rest,
+    ({ id, category_ids, sort_order, viewed, ...rest }) => rest,
   );
   const paginatedProducts = paginateItems(cleanedProducts, page, limit);
   const brandMap = new Map();
@@ -1019,7 +1023,7 @@ const getManufacturerData = async (manufacturerId, query = {}) => {
 
   // drop helper-only fields before sending to the client
   const cleanedProducts = sortedProducts.map(
-    ({ id, category_ids, sort_order, ...rest }) => rest,
+    ({ id, category_ids, sort_order, viewed, ...rest }) => rest,
   );
 
   // paginate AFTER filtering — this is what makes hasNextPage / infinite
