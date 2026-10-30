@@ -1561,6 +1561,15 @@ model oc_order_option {
   @@index([product_option_value_id], map: "product_option_value_id")
 }
 
+model notification_numbers {
+  id         Int      @id @default(autoincrement())
+  phone      String                      
+  store      String   @default("")       
+  created_at DateTime @default(now())
+
+  @@unique([phone, store])
+}
+
 model oc_order_product {
   order_product_id Int      @id @default(autoincrement())
   order_id         Int

@@ -10,7 +10,6 @@ const LANGUAGE_ID = 1;
 const STORE_ID = 0;
 
 const isSameDayTitle = (title) => /same day/i.test(title || "");
-console.log("SAME_DAY_ZONE_ID", SAME_DAY_ZONE_ID, SAME_DAY_POSTCODE_MIN, SAME_DAY_POSTCODE_MAX, SAME_DAY_CATEGORY_SLUG);
 let cachedCategoryId = null;
 const getSameDayCategoryId = async () => {
   if (cachedCategoryId) return cachedCategoryId;
