@@ -7,6 +7,7 @@ import { createAddressServices } from "../customer Address/customerAddress.servi
 import Stripe from 'stripe';
 import { transporter } from "../../config/nodemiller.js";
 import { generateOrderConfirmationEmail } from "../../utils/orderConfrmationemail.js";
+import { sendOrderWhatsApp } from "../../utils/whatsapp.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -249,14 +250,14 @@ export const handlePostPaymentRegistration = async (orderId, checkoutType, regis
   }
 
   if (customerDetails) {
-   
+
     await Promise.all([
       prisma.oc_order.update({
         where: { order_id: orderId },
         data: { customer_id: customerDetails.customer_id },
       }),
       addressData?.country_id && addressData?.zone_id
-        ? createAddressServices(customerDetails.customer_id, addressData,ip).catch((e) =>
+        ? createAddressServices(customerDetails.customer_id, addressData, ip).catch((e) =>
           console.log("Failed to create address after payment:", e.message)
         )
         : Promise.resolve(),
@@ -350,7 +351,7 @@ export const placeOrderService = async (orderData) => {
   const { totals: builtTotals, grandTotal } = totals
     ? { totals, grandTotal: totals.find((t) => t.code === "total")?.value ?? 0 }
     : buildTotals(products, shipping_cost);
-  
+
   const orderFields = {
     customer_id, customer_group_id,
     firstname: finalFirstname, lastname: finalLastname,
@@ -374,7 +375,7 @@ export const placeOrderService = async (orderData) => {
     store_url: store_url || STORE_URL,
     date_modified: newYorkTime,
   };
-  
+
   const metaArgs = {
     firstname: finalFirstname, lastname: finalLastname,
     email: finalEmail, telephone: finalTelephone,
@@ -446,9 +447,9 @@ export const placeOrderService = async (orderData) => {
 
         result.stripe_client_secret = pi.client_secret;
         result.stripe_payment_intent_id = pi.id;
-     
+
         if (pi.status === "succeeded") {
-          
+
           const postPaymentTasks = [
             prisma.oc_order.update({
               where: { order_id: result.order_id },
@@ -504,6 +505,15 @@ export const placeOrderService = async (orderData) => {
           }
 
           await Promise.all(postPaymentTasks);
+          sendOrderWhatsApp({
+            orderId: result.order_id,
+            productName: products.map((p) => `${p.mpn || p.name} x${p.quantity}`).join(", "),
+            productCode: products.map((p) => p.model).join(", "),
+            location: shipping_zone || payment_zone || "N/A",
+            price: `$${grandTotal.toFixed(2)}`,
+            delivery: shipping_method === "Same Day Delivery(Only in DC and Northern VA, order must be before 2:00PM)" ? shipping_method : "-",
+            store: "second",
+          });
 
           await Promise.all([
             _sendConfirmationEmails({
@@ -676,7 +686,7 @@ export const _sendConfirmationEmails = async ({
   shipping_address_1, shipping_address_2,
   shipping_city, shipping_zone, shipping_postcode, shipping_country, shipping_method,
   payment_method, payment_firstname, payment_lastname,
-  payment_address_1, payment_city, payment_zone, payment_country, comment,shipping_custom_field
+  payment_address_1, payment_city, payment_zone, payment_country, comment, shipping_custom_field
 }) => {
   if (!email) return;
 
@@ -704,7 +714,10 @@ export const _sendConfirmationEmails = async ({
 
     // await transporter.sendMail({
     //   from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-    //   to: adminEmail,
+    //   to: [
+    //     "contact@dcwineandspirits.com",
+    //     "order@dcwineandspirits.com"
+    //   ],
     //   subject: `New Order #${result.order_id} — DC Wine & Spirits`,
     //   html: generateOrderConfirmationEmail(emailPayload),
     // });

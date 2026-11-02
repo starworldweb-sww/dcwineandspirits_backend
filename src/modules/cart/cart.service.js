@@ -204,6 +204,7 @@ export const getCartService = async (query, { sessionId = '', customerId = 0 }) 
             model: true,
             quantity: true,
             status: true,
+            mpn:true,
             oc_product_description: {
               where: { language_id: 1 },
               select: { name: true },
@@ -325,6 +326,7 @@ export const getCartService = async (query, { sessionId = '', customerId = 0 }) 
             : null,
           image: item.oc_product.image,
           model: item.oc_product.model,
+          mpn: item.oc_product.mpn,
           stock: item.oc_product.quantity,
           status: item.oc_product.status,
           slug:
