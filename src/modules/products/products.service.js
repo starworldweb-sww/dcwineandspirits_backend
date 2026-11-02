@@ -174,6 +174,9 @@ const mapProducts = async (
     },
     select: {
       product_id: true,
+      model: true, // NEW: model no.
+      sku: true,   // NEW: SKU
+      mpn: true,   // NEW: MPN
       image: true,
       price: true,
       quantity: true,
@@ -202,6 +205,9 @@ const mapProducts = async (
     const desc = descriptions.find((d) => d.product_id === product.product_id);
     return {
       id: product.product_id,
+       model: product.model ?? null,   // NEW: model no.
+      sku: product.sku ?? null,       // NEW: SKU
+      mpn: product.mpn ?? null,       // NEW: MPN
       name: desc?.name ?? null,
       image: product.image ?? null,
       price: Number(product.price),

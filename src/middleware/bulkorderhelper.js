@@ -8,15 +8,22 @@ const TEMPLATE_PATH = path.join(process.cwd(), "templates", "bulk-order-form.xls
 const FIRST_ROW = 10; // Sr. No. 1 is on row 10
 const TEMPLATE_ROWS = 15; // template has printed Sr. No. 1..15 (rows 10..24)
 const LAST_TEMPLATE_ROW = FIRST_ROW + TEMPLATE_ROWS - 1; // row 24
-const MAX_ROWS = 100; // CHANGE 1: pehle 15 tha
+const MAX_ROWS = 100;
 
 // Footer of the template (blank row 25, "Instructions" rows 26..27)
 const FOOTER_START = LAST_TEMPLATE_ROW + 1; // row 25
 const FOOTER_END = FOOTER_START + 2; // row 27
-const COLS = 7; // A..G
+const COLS = 7; // A..G (Sr. No., Recipient, Address, Mobile, Product, Message, Remarks)
 
 // Excel stores phone numbers as text here so leading zeros / long numbers are not mangled
 const text = (v) => String(v ?? "");
+
+// "Product Name - (ModelNo)"; if there is no model, just the product name
+const productWithModel = (product, model) => {
+  const p = text(product).trim();
+  const m = text(model).trim();
+  return m ? `${p} - (${m})` : p;
+};
 
 // Rough row height for wrapped text (template rows are 15.75 high, so long text would be cut off)
 const heightFor = (cells) => {
@@ -31,13 +38,13 @@ const heightFor = (cells) => {
   return Math.max(15.75, lines * 15);
 };
 
-// CHANGE 2: 15 se zyada recipients ho toh Instructions block neeche shift karta hai
-// aur naye rows ko row 24 jaisi formatting deta hai. Returns extra row count.
+// If there are more than 15 recipients, the Instructions block is moved down
+// and the new rows get the same formatting as row 24. Returns the extra row count.
 function makeRoomForRows(ws, count) {
   const extra = Math.max(0, count - TEMPLATE_ROWS);
   if (extra === 0) return 0;
 
-  // 1. Footer ka style + value + height memory mein save karo (shift se pehle)
+  // 1. Save footer style + value + height in memory (before shifting)
   const footer = [];
   for (let r = FOOTER_START; r <= FOOTER_END; r++) {
     const cells = [];
@@ -56,16 +63,16 @@ function makeRoomForRows(ws, count) {
   }
   const rowHeight = ws.getRow(LAST_TEMPLATE_ROW).height;
 
-  // 2. Purane footer ke merges hatao
+  // 2. Remove the old footer merges (C..G)
   ws.unMergeCells(`A${FOOTER_START + 1}:B${FOOTER_END}`);
   ws.unMergeCells(`C${FOOTER_START + 1}:G${FOOTER_END}`);
 
-  // 3. Purane footer rows ko saaf karo
+  // 3. Clear the old footer rows
   for (let r = FOOTER_START; r <= FOOTER_END; r++) {
     for (let c = 1; c <= COLS; c++) ws.getCell(r, c).value = null;
   }
 
-  // 4. Naye recipient rows (25 .. 24+extra): row 24 jaisi formatting + printed Sr. No.
+  // 4. New recipient rows (25 .. 24+extra): same formatting as row 24 + printed Sr. No.
   for (let k = 1; k <= extra; k++) {
     const r = LAST_TEMPLATE_ROW + k;
     for (let c = 1; c <= COLS; c++) ws.getCell(r, c).style = rowStyle[c - 1];
@@ -73,7 +80,7 @@ function makeRoomForRows(ws, count) {
     ws.getRow(r).height = rowHeight;
   }
 
-  // 5. Footer ko neeche rakho (extra rows shift) aur merges dobara banao
+  // 5. Put the footer further down (shifted by extra rows) and merge again
   footer.forEach((f, i) => {
     const r = FOOTER_START + extra + i;
     f.cells.forEach((cell, ci) => {
@@ -103,7 +110,7 @@ export async function buildBulkOrderXlsx(payload) {
   await wb.xlsx.readFile(TEMPLATE_PATH); // keeps the logo image, merged cells, colours and widths
   const ws = wb.worksheets[0];
 
-  // CHANGE 3: pehle jagah banao (15 se zyada rows ke liye), phir data bharo
+  // Make room first (for more than 15 rows), then fill the data
   const extra = makeRoomForRows(ws, rows.length);
 
   // 1. Customer block (values go in the merged C:F cells, so write to column C)
@@ -117,6 +124,8 @@ export async function buildBulkOrderXlsx(payload) {
   // 2. Recipient rows. Column A already holds the printed Sr. No., so we leave it alone.
   rows.forEach((r, i) => {
     const n = FIRST_ROW + i;
+    const product = productWithModel(r.product, r.model);
+
     const set = (col, value) => {
       const cell = ws.getCell(`${col}${n}`);
       cell.value = text(value);
@@ -125,7 +134,7 @@ export async function buildBulkOrderXlsx(payload) {
     set("B", r.recipient);
     set("C", r.address);
     set("D", r.mobile);
-    set("E", r.product);
+    set("E", product); // Product Name - (ModelNo)
     set("F", r.message);
     set("G", r.remarks);
 
@@ -133,14 +142,13 @@ export async function buildBulkOrderXlsx(payload) {
     ws.getRow(n).height = heightFor([
       [r.recipient, 17],
       [r.address, 25],
-      [r.product, 28],
+      [product, 28],
       [r.message, 36],
       [r.remarks, 19],
     ]);
   });
 
-  // 3. Instructions (merged block at the bottom)
-  // CHANGE 4: cell ab shift hoti hai (C26 -> C26 + extra)
+  // 3. Instructions (merged block at the bottom, shifted down when extra rows were added)
   if (instructions) {
     const cell = ws.getCell(`C${FOOTER_START + 1 + extra}`);
     cell.value = text(instructions);
