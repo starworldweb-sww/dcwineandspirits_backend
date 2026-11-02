@@ -510,7 +510,7 @@ export const placeOrderService = async (orderData) => {
             productName: products.map((p) => `${p.mpn || p.name} x${p.quantity}`).join(", "),
             productCode: products.map((p) => p.model).join(", "),
             location: shipping_zone || payment_zone || "N/A",
-            price: grandTotal.toFixed(2),
+            price: `$${grandTotal.toFixed(2)}`,
             delivery: shipping_method === "Same Day Delivery(Only in DC and Northern VA, order must be before 2:00PM)" ? shipping_method : "-",
             store: "second",
           });
