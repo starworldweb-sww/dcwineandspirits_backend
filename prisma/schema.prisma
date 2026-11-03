@@ -2407,3 +2407,52 @@ enum oc_googleshopping_product_size_system {
   UK
   US
 }
+
+
+
+// ============================================================
+//  ✨ NEW: Bulk Order models
+//  Ye existing tables (bulk_orders_table, bulk_order_item) ke
+//  columns se exact match karte hain.
+// ============================================================
+
+// 1) PARENT: ek bulk order ki customer info (Excel ka upar wala hissa)
+model BulkOrder {
+  bulkOrderId    Int             @id @default(autoincrement()) @map("bulk_order_id") @db.UnsignedInt
+  customerName   String          @map("customer_name") @db.VarChar(128)
+  email          String          @db.VarChar(255)
+  mobileNo       String          @map("mobile_no") @db.VarChar(32)       // String hi rakho (leading zero / +91 ke liye)
+  companyName    String?         @map("company_name") @db.VarChar(255)
+  billingAddress String          @map("billing_address") @db.Text
+  sourceFile     String?         @map("source_file") @db.VarChar(255)    // uploaded Excel file ka naam
+  status         String          @default("pending") @db.VarChar(32)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.DateTime(0)
+
+  // Is order ki saari recipient rows
+  items          BulkOrderItem[]
+
+  @@index([email], map: "idx_bulk_order_email")
+  @@map("bulk_orders_table")
+}
+
+// 2) CHILD: har recipient / gift ki ek row (Excel ka neeche wala table)
+model BulkOrderItem {
+  bulkOrderItemId Int       @id @default(autoincrement()) @map("bulk_order_item_id") @db.UnsignedInt
+  bulkOrderId     Int       @map("bulk_order_id") @db.UnsignedInt
+  srNo            Int       @map("sr_no") @db.UnsignedInt
+  recipientName   String    @map("recipient_name") @db.VarChar(128)
+  shippingAddress String    @map("shipping_address") @db.Text
+  mobileNo        String?   @map("mobile_no") @db.VarChar(32)
+  productInput    String    @map("product_input") @db.VarChar(255)   // jo user ne Excel mein likha (naam ya code)
+  productId       Int?      @map("product_id") @db.UnsignedInt       // match mila to oc_product ka id
+  productName     String?   @map("product_name") @db.VarChar(255)
+  mpn             String?   @db.VarChar(64)
+  modelNo         String?   @map("model_no") @db.VarChar(64)
+  message         String?   @db.VarChar(500)
+  remarks         String?   @db.VarChar(500)
+
+  // Order delete hone par uski rows bhi delete (agar DB mein FK hai)
+  order           BulkOrder @relation(fields: [bulkOrderId], references: [bulkOrderId], onDelete: Cascade)
+
+  @@map("bulk_order_item")
+}

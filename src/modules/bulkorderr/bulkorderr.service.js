@@ -1,12 +1,11 @@
 import { randomInt } from "crypto";
-// Shared transporter used across the project
 import { transporter as defaultTransporter } from "../../config/nodemiller.js";
 import { buildBulkOrderXlsx, bulkOrderFileName } from "../../middleware/bulkorderhelper.js";
+import { prisma } from '../../../lib/prisma.js';
 
 const MAX_ROWS = 1000;
-
 const BRAND = "DC Wine & Spirits";
-const BRAND_COLOR = "#7a1f2b"; // maroon, change to match your theme
+const BRAND_COLOR = "#7a1f2b"; 
 const SUPPORT_EMAIL = "contact@dcwineandspirits.com";
 
 /* ------------------------------- validation ------------------------------- */
@@ -69,7 +68,7 @@ const cleanPayload = (body) => {
 
 /* --------------------------------- helpers -------------------------------- */
 
-// No database, so the number is date + random digits, e.g. BO-20261017-4821
+// Order number is date + random digits, e.g. BO-20261017-4821
 const makeOrderNo = () => {
   const d = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   return `BO-${d}-${randomInt(1000, 10000)}`;
@@ -200,6 +199,62 @@ const customerEmailText = ({ orderNo, customer, rows, instructions }) =>
     .filter((l) => l !== null)
     .join("\n");
 
+/* --------------------------------- database -------------------------------- */
+
+// ============================================================
+//  Bulk order ko DB mein store karne wala function (sirf DB, email nahi)
+//
+//  Tables:
+//    - bulk_orders_table  -> 1 row  (customer ki info)
+//    - bulk_order_item    -> N rows (har recipient ki row)
+//
+//  Dono ek hi query (transaction) mein save hote hain:
+//  ya sab save hoga ya kuch nahi.
+// ============================================================
+
+/**
+ * Bulk order DB mein save karta hai.
+ *
+ * @param {Object} payload  - cleaned data, is shape mein:
+ *   {
+ *     customer: { name, email, mobile, company, billing },
+ *     rows: [{ srNo, recipient, address, mobile, product, model, message, remarks }]
+ *   }
+ * @param {string} [sourceFile] - Excel file ka naam / order ref (optional)
+ * @returns {Promise<{ bulkOrderId: number }>} - naye order ka id
+ */
+export const saveBulkOrder = async ({ customer, rows }, sourceFile = null) => {
+  return prisma.bulkOrder.create({
+    data: {
+      // 1) Customer ki info -> bulk_orders_table
+      customerName: customer.name,
+      email: customer.email,
+      mobileNo: customer.mobile,
+      companyName: customer.company || null, // khaali ho to null
+      billingAddress: customer.billing,
+      sourceFile, // optional
+      // status DB ka default "pending" hi rahega
+
+      // 2) Saari recipient rows -> bulk_order_item
+      items: {
+        createMany: {
+          data: rows.map((row, index) => ({
+            srNo: row.srNo ?? index + 1,
+            recipientName: row.recipient,
+            shippingAddress: row.address,
+            mobileNo: row.mobile || null,
+            productInput: row.product,
+            modelNo: row.model ? row.model.slice(0, 64) : null, // DB column 64 chars ka hai
+            message: row.message || null,
+            remarks: row.remarks || null,
+          })),
+        },
+      },
+    },
+    select: { bulkOrderId: true },
+  });
+};
+
 /* --------------------------------- service -------------------------------- */
 
 // Default is the shared transporter (the parameter is only for tests)
@@ -215,6 +270,20 @@ export const bulkOrderrService = async (body, transporter = defaultTransporter) 
   try {
     const xlsx = await buildBulkOrderXlsx(checked.payload);
     const count = `${rows.length} recipient${rows.length > 1 ? "s" : ""}`;
+
+    // ✨ NEW: DB mein save karo (email se pehle, taaki email fail ho tab bhi order record rahe)
+    // Save fail hua to email nahi jayegi aur customer ko error milega.
+    try {
+      const saved = await saveBulkOrder(checked.payload, bulkOrderFileName(orderNo));
+      console.log("Bulk order saved, id:", saved.bulkOrderId);
+    } catch (dbError) {
+      console.error("Bulk order DB save error:", dbError);
+      return {
+        success: false,
+        status: 500,
+        message: "Could not save the bulk order. Please try again.",
+      };
+    }
 
     // Same file is attached to both the shop mail and the customer mail
     const attachments = [
