@@ -27,6 +27,8 @@ import redirectRouter from './modules/redairect url/redirect.route.js';
 import contactRouter from './modules/contact/contact.routes.js';
 import reviewRouter from './modules/review/review.route.js';
 import bulkrouter from './modules/bulkorderr/bulkorderr.routes.js';
+import testimonialRouter from './modules/testimonial/testimonial.routes.js';
+
 
 export const createApp = () => {
 
@@ -81,6 +83,8 @@ export const createApp = () => {
     app.use('/api/v1/redirect',redirectRouter)
     app.use('/api/v1/contact',contactRouter)
     app.use('/api/v1/review', reviewRouter)
+    app.use('/api/v1/testimonials', testimonialRouter)
+
 
     
 
