@@ -406,3 +406,167 @@ export const trackOrderService = async (data) => {
     }))
   };
 };
+
+
+
+export const bulkOrderHistoryService = async (data) => {
+  
+  const page = parsePositiveInt(data.query?.page, 1);
+  const requestedLimit = parsePositiveInt(data.query?.limit, DEFAULT_LIMIT);
+  const limit = Math.min(requestedLimit, MAX_LIMIT);
+  const skip = (page - 1) * limit;
+  const currentCustomer = data.customer;
+
+const customerId = Number(data.customer?.customer_id);
+if (!Number.isInteger(customerId) || customerId <= 0) {
+  throw new Error("Unauthorized");
+}
+const where = { customerId };  
+
+  const [bulkOrders, total] = await Promise.all([
+    prisma.bulkOrder.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        bulkOrderId: true,
+        customerName: true,
+        companyName: true,
+        sourceFile: true, // order ref (BO-2026...) isi mein save hota hai
+        status: true,
+        createdAt: true,
+        _count: {
+          select: { items: true }
+        }
+      }
+    }),
+    prisma.bulkOrder.count({ where })
+  ]);
+
+  const data_list = bulkOrders.map(order => ({
+    bulk_order_id: order.bulkOrderId,
+    order_ref: order.sourceFile,
+    name: order.customerName,
+    company: order.companyName,
+    status: order.status,
+    date_added: order.createdAt,
+    total_recipients: order._count.items
+  }));
+
+  return {
+    page,
+    limit,
+    total,
+    total_pages: Math.ceil(total / limit),
+    data: data_list
+  };
+};
+
+
+
+// ============================================================
+// SINGLE BULK ORDER DETAILS
+// Ek bulk order ki poori detail + uske saare recipients (items)
+// ============================================================
+export const bulkOrderDetailsService = async (bulkOrderId, currentCustomer) => {
+  // 1. ID ko number mein badlo aur check karo ki valid hai
+  const id = Number(bulkOrderId);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error('Invalid bulk order id');
+  }
+
+  const customerId = Number(currentCustomer?.customer_id);
+if (!Number.isInteger(customerId) || customerId <= 0) {
+  throw new Error("Unauthorized");
+}
+// findFirst where: { bulkOrderId: id, customerId }
+
+  // 2. Order dhundo. customerId bhi match karte hain taaki koi
+  //    dusre customer ka order na dekh sake
+  const bulkOrder = await prisma.bulkOrder.findFirst({
+    where: {
+      bulkOrderId: id,
+      customerId: currentCustomer.customer_id
+    },
+    select: {
+      bulkOrderId: true,
+      customerName: true,
+      email: true,
+      mobileNo: true,
+      companyName: true,
+      billingAddress: true,
+      sourceFile: true, // order ref (BO-2026...) isi mein save hota hai
+      status: true,
+      createdAt: true,
+      items: {
+        orderBy: { srNo: 'asc' }, // Excel ke sr no. ke order mein
+        select: {
+          bulkOrderItemId: true,
+          srNo: true,
+          recipientName: true,
+          shippingAddress: true,
+          mobileNo: true,
+          productInput: true, // jo user ne Excel mein likha tha
+          productId: true,
+          productName: true,
+          mpn: true,
+          modelNo: true,
+          message: true,
+          remarks: true
+        }
+      }
+    }
+  });
+
+  // 3. Order nahi mila (ya kisi aur customer ka hai)
+  if (!bulkOrder) throw new Error('Bulk order not found');
+
+  // 4. Matched products ke slugs ek hi query mein nikalo (link banane ke liye)
+  const productIds = [
+    ...new Set(bulkOrder.items.map(i => i.productId).filter(Boolean))
+  ];
+
+  let slugMap = {};
+  if (productIds.length > 0) {
+    const slugs = await prisma.oc_seo_url.findMany({
+      where: { query: { in: productIds.map(pid => `product_id=${pid}`) } },
+      select: { query: true, keyword: true }
+    });
+    // { "product_id=12": "some-slug", ... }
+    slugMap = Object.fromEntries(slugs.map(s => [s.query, s.keyword]));
+  }
+
+  // 5. Final response ready karo
+  return {
+    order_details: {
+      bulk_order_id: bulkOrder.bulkOrderId,
+      order_ref: bulkOrder.sourceFile,
+      status: bulkOrder.status,
+      date_added: bulkOrder.createdAt,
+      total_recipients: bulkOrder.items.length
+    },
+    customer: {
+      name: bulkOrder.customerName,
+      email: bulkOrder.email,
+      mobile_no: bulkOrder.mobileNo,
+      company: bulkOrder.companyName,
+      billing_address: bulkOrder.billingAddress
+    },
+    items: bulkOrder.items.map(item => ({
+      item_id: item.bulkOrderItemId,
+      sr_no: item.srNo,
+      recipient_name: item.recipientName,
+      shipping_address: item.shippingAddress,
+      mobile_no: item.mobileNo,
+      product_input: item.productInput,
+      product_id: item.productId,
+      product_name: item.productName,
+      mpn: item.mpn,
+      model_no: item.modelNo,
+      message: item.message,
+      remarks: item.remarks,
+      slug: item.productId ? slugMap[`product_id=${item.productId}`] || null : null
+    }))
+  };
+};

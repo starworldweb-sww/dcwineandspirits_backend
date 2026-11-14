@@ -2421,20 +2421,22 @@ model BulkOrder {
   bulkOrderId    Int             @id @default(autoincrement()) @map("bulk_order_id") @db.UnsignedInt
   customerName   String          @map("customer_name") @db.VarChar(128)
   email          String          @db.VarChar(255)
-  mobileNo       String          @map("mobile_no") @db.VarChar(32)       // String hi rakho (leading zero / +91 ke liye)
+
+  mobileNo       String          @map("mobile_no") @db.VarChar(32)
   companyName    String?         @map("company_name") @db.VarChar(255)
   billingAddress String          @map("billing_address") @db.Text
-  sourceFile     String?         @map("source_file") @db.VarChar(255)    // uploaded Excel file ka naam
+  sourceFile     String?         @map("source_file") @db.VarChar(255)
   status         String          @default("pending") @db.VarChar(32)
   createdAt      DateTime        @default(now()) @map("created_at") @db.DateTime(0)
 
-  // Is order ki saari recipient rows
+  customerId     Int?            @map("customer_id")   // <-- NEW
+
   items          BulkOrderItem[]
 
   @@index([email], map: "idx_bulk_order_email")
+  @@index([customerId], map: "idx_bulk_orders_customer_id")   // <-- NEW
   @@map("bulk_orders_table")
 }
-
 // 2) CHILD: har recipient / gift ki ek row (Excel ka neeche wala table)
 model BulkOrderItem {
   bulkOrderItemId Int       @id @default(autoincrement()) @map("bulk_order_item_id") @db.UnsignedInt
