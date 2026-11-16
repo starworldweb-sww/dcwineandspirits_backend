@@ -114,9 +114,12 @@ const splitFullName = (fullName) => {
 /**
  * Agar email se account nahi hai to naya account banata hai.
  *
+ * CHANGE 1: ab ye hamesha ek object return karta hai (customerId bhi milta hai)
+ *
  * Return:
- *   - null                          -> account pehle se hai (ya skip hua), kuch nahi kiya
- *   - { email, password }           -> naya account ban gaya (password sirf email mein bhejna hai)
+ *   { customerId, newAccount }
+ *   - customerId : customer ki id (pehle se tha ya abhi bana), skip hua to null
+ *   - newAccount : { email, password } agar naya account bana, warna null
  *
  * Error throw kar sakta hai, isliye caller ise alag try/catch mein chalaye.
  */
@@ -125,14 +128,16 @@ const createCustomerIfNew = async (customer, ip) => {
   const email = customer.email.toLowerCase().trim();
 
   // Step 2: oc_customer.email sirf 96 chars ka hai, lamba ho to skip
-  if (email.length > 96) return null;
+  if (email.length > 96) return { customerId: null, newAccount: null };
 
-  // Step 3: account pehle se hai to kuch mat karo
+  // Step 3: account pehle se hai to uski id return karo (naya account nahi banega)
   const existingCustomer = await prisma.oc_customer.findFirst({
     where: { email },
     select: { customer_id: true },
   });
-  if (existingCustomer) return null;
+  if (existingCustomer) {
+    return { customerId: existingCustomer.customer_id, newAccount: null };
+  }
 
   // Step 4: random password banao aur hash karo (DB mein sirf hash jaayega)
   const plainPassword = generateRandomPassword();
@@ -183,7 +188,11 @@ const createCustomerIfNew = async (customer, ip) => {
     },
   });
 
-  return { email, password: plainPassword };
+  // Step 7: customerId aur naya account dono return karo
+  return {
+    customerId: newCustomer.customer_id,
+    newAccount: { email, password: plainPassword },
+  };
 };
 
 /* ----------------------------- customer email ----------------------------- */
@@ -395,15 +404,17 @@ const registerEmailText = ({ customer, newAccount }) =>
 /**
  * Bulk order DB mein save karta hai.
  *
- * @param {Object} payload  - cleaned data
+ * @param {Object} payload  - cleaned data (+ customerId)
  * @returns {Promise<{ bulkOrderId: number, orderNo: string }>}
  * @throws {Error} - DB save fail hone par
  */
-export const saveBulkOrder = async ({ customer, rows }) => {
+// CHANGE 2: customerId ab parameter mein aata hai (default null)
+export const saveBulkOrder = async ({ customer, rows, customerId = null }) => {
   let saved;
   try {
     saved = await prisma.bulkOrder.create({
       data: {
+        customerId: customerId || null, // CHANGE 2: customer ki id order ke saath save hogi
         customerName: customer.name,
         email: customer.email,
         mobileNo: customer.mobile,
@@ -467,10 +478,21 @@ export const bulkOrderrService = async (body, transporter = defaultTransporter, 
   try {
     const count = `${rows.length} recipient${rows.length > 1 ? "s" : ""}`;
 
-    // DB mein save karo
-    // Save fail hua to customer ko error milega.
+    // CHANGE 3 - Step 1: Pehle customer banao / dhundo
+    // (fail ho jaaye to bhi order rukna nahi chahiye)
+    let newAccount = null;
+    let customerId = null;
     try {
-      const saved = await saveBulkOrder(checked.payload);
+      const result = await createCustomerIfNew(customer, ip);
+      customerId = result?.customerId ?? null;
+      newAccount = result?.newAccount ?? null;
+    } catch (registerError) {
+      console.error("Bulk order auto-register error:", registerError);
+    }
+
+    // CHANGE 3 - Step 2: Ab order save karo, customerId ke saath
+    try {
+      const saved = await saveBulkOrder({ ...checked.payload, customerId });
       orderNo = saved.orderNo;
       console.log("Bulk order saved:", saved.bulkOrderId, orderNo);
     } catch (dbError) {
@@ -480,16 +502,6 @@ export const bulkOrderrService = async (body, transporter = defaultTransporter, 
         status: 500,
         message: "Could not save the bulk order. Please try again.",
       };
-    }
-
-    // Naya account (agar pehle se nahi hai)
-    // Order save ho chuka hai, isliye yahan fail hua to sirf log karo, order mat roko.
-    // newAccount = { email, password } (naya account bana) ya null (pehle se tha / skip / fail)
-    let newAccount = null;
-    try {
-      newAccount = await createCustomerIfNew(customer, ip);
-    } catch (registerError) {
-      console.error("Bulk order auto-register error:", registerError);
     }
 
     try {
