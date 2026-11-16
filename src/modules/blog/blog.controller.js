@@ -14,7 +14,7 @@ import {
 
 export const getAllPosts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, categoryId, categorySlug } = req.query;
+    const { page = 1, limit = 12, categoryId, categorySlug } = req.query;
 
     const data = await getAllPostsService({
       page: Number(page),

@@ -13,7 +13,7 @@ const publishedWhere = () => ({
     status: true,
     date_created: { lte: new Date() },
 });
-export const getAllPostsService = async ({ page = 1, limit = 10, categoryId, categorySlug } = {}) => {
+export const getAllPostsService = async ({ page = 1, limit = 12, categoryId, categorySlug } = {}) => {
     const skip = (page - 1) * limit;
 
     const where = publishedWhere();
