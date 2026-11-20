@@ -2428,8 +2428,8 @@ model BulkOrder {
   sourceFile     String?         @map("source_file") @db.VarChar(255)
   status         String          @default("pending") @db.VarChar(32)
   createdAt      DateTime        @default(now()) @map("created_at") @db.DateTime(0)
-
-  customerId     Int?            @map("customer_id")   // <-- NEW
+  instruction    String?         @db.Text 
+  customerId     Int?            @map("customer_id")   
 
   items          BulkOrderItem[]
 

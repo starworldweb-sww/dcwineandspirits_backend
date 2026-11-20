@@ -409,17 +409,18 @@ const registerEmailText = ({ customer, newAccount }) =>
  * @throws {Error} - DB save fail hone par
  */
 // CHANGE 2: customerId ab parameter mein aata hai (default null)
-export const saveBulkOrder = async ({ customer, rows, customerId = null }) => {
+export const saveBulkOrder = async ({ customer, rows, instructions, customerId = null }) => {
   let saved;
   try {
     saved = await prisma.bulkOrder.create({
       data: {
-        customerId: customerId || null, // CHANGE 2: customer ki id order ke saath save hogi
+        customerId: customerId || null,
         customerName: customer.name,
         email: customer.email,
         mobileNo: customer.mobile,
         companyName: customer.company || null, 
         billingAddress: customer.billing,
+        instruction: instructions || null, 
         items: {
           createMany: {
             data: rows.map((row, index) => ({
